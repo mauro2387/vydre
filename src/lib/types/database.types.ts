@@ -274,3 +274,12 @@ export type MessageType = 'reminder' | 'confirmation' | 'summary'
 export type MessageChannel = 'email' | 'whatsapp' | 'sms'
 export type MessageStatus = 'pending' | 'sent' | 'failed'
 export type ConfirmationResponse = 'confirmed' | 'declined'
+
+// Appointment con relaciones
+export type AppointmentWithRelations = Appointment & {
+  patients: Pick<Patient, 'id' | 'name' | 'phone' | 'email'> | null
+  appointment_confirmations: Pick<
+    AppointmentConfirmation,
+    'response' | 'responded_at'
+  > | null
+}
