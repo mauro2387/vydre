@@ -173,3 +173,98 @@ export async function updateAppointmentStatus(
 export async function cancelAppointment(appointmentId: string) {
   return updateAppointmentStatus(appointmentId, 'cancelled')
 }
+
+export type ActivityItem = {
+  id: string
+  type: 'appointment' | 'confirmation' | 'summary'
+  description: string
+  timestamp: string
+}
+
+export async function getRecentActivity(): Promise<ActivityItem[]> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  const { getProfessional } = await import('./professional')
+  const professional = await getProfessional()
+  if (!professional) return []
+
+  const since = new Date()
+  since.setHours(since.getHours() - 24)
+  const sinceISO = since.toISOString()
+
+  const items: ActivityItem[] = []
+
+  // Turnos creados en las últimas 24hs
+  const { data: recentApts } = await supabase
+    .from('appointments')
+    .select('id, created_at, start_at, patients (name)')
+    .eq('professional_id', professional.id)
+    .gte('created_at', sinceISO)
+    .order('created_at', { ascending: false })
+    .limit(10)
+
+  for (const apt of recentApts ?? []) {
+    const patient = apt.patients as unknown as { name: string } | null
+    const time = new Date(apt.start_at).toLocaleTimeString('es-UY', {
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+    items.push({
+      id: `apt-${apt.id}`,
+      type: 'appointment',
+      description: `Turno con ${patient?.name ?? 'paciente'} — ${time}`,
+      timestamp: apt.created_at,
+    })
+  }
+
+  // Confirmaciones recibidas en las últimas 24hs
+  const { data: recentConfs } = await supabase
+    .from('appointment_confirmations')
+    .select('id, responded_at, response, appointments (id, professional_id, patients (name))')
+    .not('responded_at', 'is', null)
+    .gte('responded_at', sinceISO)
+    .order('responded_at', { ascending: false })
+    .limit(10)
+
+  for (const conf of recentConfs ?? []) {
+    const apt = conf.appointments as unknown as {
+      id: string
+      professional_id: string
+      patients: { name: string } | null
+    } | null
+    if (apt?.professional_id !== professional.id) continue
+    const responseText = conf.response === 'confirmed' ? 'confirmó' : 'declinó'
+    items.push({
+      id: `conf-${conf.id}`,
+      type: 'confirmation',
+      description: `${apt?.patients?.name ?? 'Paciente'} ${responseText} su turno`,
+      timestamp: conf.responded_at!,
+    })
+  }
+
+  // Resúmenes enviados en las últimas 24hs
+  const { data: recentMsgs } = await supabase
+    .from('messages')
+    .select('id, sent_at, recipient, type')
+    .eq('professional_id', professional.id)
+    .eq('type', 'summary')
+    .eq('status', 'sent')
+    .gte('sent_at', sinceISO)
+    .order('sent_at', { ascending: false })
+    .limit(10)
+
+  for (const msg of recentMsgs ?? []) {
+    items.push({
+      id: `msg-${msg.id}`,
+      type: 'summary',
+      description: `Resumen enviado a ${msg.recipient}`,
+      timestamp: msg.sent_at!,
+    })
+  }
+
+  // Sort by timestamp desc, take top 10
+  items.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+  return items.slice(0, 10)
+}

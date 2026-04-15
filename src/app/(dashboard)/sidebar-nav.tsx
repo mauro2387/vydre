@@ -15,7 +15,39 @@ const navItems = [
   { href: '/configuracion', label: 'Configuración', icon: Settings },
 ]
 
-export function SidebarNav({ professionalName }: { professionalName: string }) {
+const avatarColors = [
+  'bg-blue-500',
+  'bg-emerald-500',
+  'bg-violet-500',
+  'bg-amber-500',
+  'bg-rose-500',
+  'bg-cyan-500',
+]
+
+function getAvatarColor(name: string): string {
+  let sum = 0
+  for (let i = 0; i < name.length; i++) {
+    sum += name.charCodeAt(i)
+  }
+  return avatarColors[sum % avatarColors.length]
+}
+
+function getInitials(name: string): string {
+  return name
+    .split(' ')
+    .slice(0, 2)
+    .map((n) => n[0])
+    .join('')
+    .toUpperCase()
+}
+
+export function SidebarNav({
+  professionalName,
+  professionalSpecialty,
+}: {
+  professionalName: string
+  professionalSpecialty: string
+}) {
   const pathname = usePathname()
   const router = useRouter()
 
@@ -54,7 +86,20 @@ export function SidebarNav({ professionalName }: { professionalName: string }) {
       </nav>
       <Separator />
       <div className="p-4 space-y-3">
-        <p className="text-sm font-medium truncate">{professionalName}</p>
+        <div className="flex items-center gap-3">
+          <div
+            className={cn(
+              'flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white',
+              getAvatarColor(professionalName)
+            )}
+          >
+            {getInitials(professionalName)}
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-medium truncate">{professionalName}</p>
+            <p className="text-xs text-muted-foreground truncate">{professionalSpecialty}</p>
+          </div>
+        </div>
         <Button
           variant="ghost"
           size="sm"

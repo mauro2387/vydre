@@ -1,10 +1,19 @@
-export default function ConfiguracionPage() {
+import { redirect } from 'next/navigation'
+import { createClient } from '@/lib/supabase/server'
+import { getProfessional } from '@/lib/actions/professional'
+import { ConfiguracionView } from '@/components/app/configuracion-view'
+
+export default async function ConfiguracionPage() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  const professional = await getProfessional()
+  if (!professional) redirect('/onboarding')
+
   return (
-    <div className="flex h-full items-center justify-center">
-      <div className="text-center">
-        <h1 className="text-3xl font-bold">Configuración</h1>
-        <p className="mt-2 text-muted-foreground">En construcción — Sprint siguiente</p>
-      </div>
-    </div>
+    <ConfiguracionView
+      professional={professional}
+      userEmail={user?.email ?? ''}
+    />
   )
 }

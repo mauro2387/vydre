@@ -28,7 +28,10 @@ export default async function DashboardLayout({
 
   return (
     <div className="flex min-h-screen">
-      <SidebarNav professionalName={professional.name} />
+      <SidebarNav
+        professionalName={professional.name}
+        professionalSpecialty={professional.specialty}
+      />
       <main className="flex-1 p-8">
         {children}
       </main>

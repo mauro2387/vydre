@@ -1,7 +1,7 @@
-import { CalendarDays, CalendarX, CheckCircle, Clock, AlertTriangle } from 'lucide-react'
-import { format } from 'date-fns'
+import { CalendarDays, CalendarX, CheckCircle, Clock, AlertTriangle, Calendar, Send } from 'lucide-react'
+import { format, formatDistanceToNow } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { getTodayAppointments, getUpcomingUnconfirmed } from '@/lib/actions/appointments'
+import { getTodayAppointments, getUpcomingUnconfirmed, getRecentActivity } from '@/lib/actions/appointments'
 import { getProfessional } from '@/lib/actions/professional'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -9,10 +9,11 @@ import { AppointmentStatusBadge } from '@/components/app/appointment-status-badg
 import type { AppointmentStatus } from '@/lib/types/database.types'
 
 export default async function DashboardPage() {
-  const [todayAppointments, unconfirmed, professional] = await Promise.all([
+  const [todayAppointments, unconfirmed, professional, recentActivity] = await Promise.all([
     getTodayAppointments(),
     getUpcomingUnconfirmed(),
     getProfessional(),
+    getRecentActivity(),
   ])
 
   const now = new Date()
@@ -149,6 +150,50 @@ export default async function DashboardPage() {
           </p>
         </div>
       )}
+
+      {/* Recent activity */}
+      <div>
+        <h2 className="mb-4 text-lg font-semibold">Actividad reciente</h2>
+        {recentActivity.length === 0 ? (
+          <Card>
+            <CardContent className="py-8 text-center">
+              <p className="text-muted-foreground">Sin actividad reciente</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card>
+            <CardContent className="divide-y pt-4">
+              {recentActivity.map((item) => {
+                const Icon = item.type === 'appointment'
+                  ? Calendar
+                  : item.type === 'confirmation'
+                    ? CheckCircle
+                    : Send
+                const iconColor = item.type === 'appointment'
+                  ? 'text-primary'
+                  : item.type === 'confirmation'
+                    ? 'text-green-600'
+                    : 'text-blue-600'
+
+                return (
+                  <div key={item.id} className="flex items-center gap-3 py-3">
+                    <Icon className={`h-4 w-4 ${iconColor}`} />
+                    <div className="flex-1">
+                      <p className="text-sm">{item.description}</p>
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      {formatDistanceToNow(new Date(item.timestamp), {
+                        locale: es,
+                        addSuffix: true,
+                      })}
+                    </span>
+                  </div>
+                )
+              })}
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </div>
   )
 }

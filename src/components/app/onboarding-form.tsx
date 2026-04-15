@@ -17,6 +17,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { ScheduleEditor, defaultSchedule } from '@/components/app/schedule-editor'
+import type { ScheduleValue } from '@/components/app/schedule-editor'
 
 const specialties = [
   'Odontología',
@@ -37,32 +39,6 @@ const durations = [
   { label: '60 min', value: 60 },
 ]
 
-const dayLabels: Record<string, string> = {
-  monday: 'Lunes',
-  tuesday: 'Martes',
-  wednesday: 'Miércoles',
-  thursday: 'Jueves',
-  friday: 'Viernes',
-  saturday: 'Sábado',
-  sunday: 'Domingo',
-}
-
-const dayKeys = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
-
-function generateTimeSlots(start: number, end: number): string[] {
-  const slots: string[] = []
-  for (let hour = start; hour <= end; hour++) {
-    slots.push(`${hour.toString().padStart(2, '0')}:00`)
-    if (hour < end) {
-      slots.push(`${hour.toString().padStart(2, '0')}:30`)
-    }
-  }
-  return slots
-}
-
-const startTimeSlots = generateTimeSlots(7, 20)
-const endTimeSlots = generateTimeSlots(7, 21)
-
 const step1Schema = z.object({
   name: z.string().min(1, 'El nombre es requerido'),
   specialty: z.string().min(1, 'Seleccioná una especialidad'),
@@ -72,25 +48,9 @@ const step1Schema = z.object({
 
 type Step1Data = z.infer<typeof step1Schema>
 
-type DaySchedule = {
-  active: boolean
-  start: string
-  end: string
-}
-
-const defaultSchedule: Record<string, DaySchedule> = {
-  monday: { active: true, start: '09:00', end: '18:00' },
-  tuesday: { active: true, start: '09:00', end: '18:00' },
-  wednesday: { active: true, start: '09:00', end: '18:00' },
-  thursday: { active: true, start: '09:00', end: '18:00' },
-  friday: { active: true, start: '09:00', end: '18:00' },
-  saturday: { active: false, start: '09:00', end: '13:00' },
-  sunday: { active: false, start: '09:00', end: '13:00' },
-}
-
 export function OnboardingForm({ initialName }: { initialName: string }) {
   const [step, setStep] = useState(1)
-  const [schedule, setSchedule] = useState<Record<string, DaySchedule>>(defaultSchedule)
+  const [schedule, setSchedule] = useState<ScheduleValue>(defaultSchedule)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -114,13 +74,6 @@ export function OnboardingForm({ initialName }: { initialName: string }) {
   async function goToStep2() {
     const valid = await trigger()
     if (valid) setStep(2)
-  }
-
-  function updateDay(day: string, field: keyof DaySchedule, value: string | boolean) {
-    setSchedule(prev => ({
-      ...prev,
-      [day]: { ...prev[day], [field]: value },
-    }))
   }
 
   async function onSubmit(data: Step1Data) {
@@ -252,53 +205,7 @@ export function OnboardingForm({ initialName }: { initialName: string }) {
               <CardTitle>¿Qué días y horarios atendés?</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {dayKeys.map((day) => {
-                const dayData = schedule[day]
-                return (
-                  <div key={day} className="flex items-center gap-3">
-                    <input
-                      type="checkbox"
-                      checked={dayData.active}
-                      onChange={(e) => updateDay(day, 'active', e.target.checked)}
-                      className="h-4 w-4 rounded border-input"
-                    />
-                    <span className="w-24 text-sm font-medium">{dayLabels[day]}</span>
-                    <Select
-                      value={dayData.start}
-                      onValueChange={(val) => { if (val) updateDay(day, 'start', val) }}
-                      disabled={!dayData.active}
-                    >
-                      <SelectTrigger className={`w-28 ${!dayData.active ? 'opacity-40' : ''}`}>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {startTimeSlots.map((t) => (
-                          <SelectItem key={t} value={t}>
-                            {t}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <span className="text-sm text-muted-foreground">a</span>
-                    <Select
-                      value={dayData.end}
-                      onValueChange={(val) => { if (val) updateDay(day, 'end', val) }}
-                      disabled={!dayData.active}
-                    >
-                      <SelectTrigger className={`w-28 ${!dayData.active ? 'opacity-40' : ''}`}>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {endTimeSlots.map((t) => (
-                          <SelectItem key={t} value={t}>
-                            {t}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )
-              })}
+              <ScheduleEditor value={schedule} onChange={setSchedule} />
 
               {error && (
                 <p className="text-sm text-destructive">{error}</p>
