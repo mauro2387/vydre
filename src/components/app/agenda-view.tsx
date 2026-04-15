@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
 import { format, addDays, isSameDay } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { ChevronLeft, ChevronRight, Plus, MoreVertical, Bell } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Plus, MoreVertical, Bell, FileText, ClipboardList } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -17,7 +17,9 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { AppointmentStatusBadge } from '@/components/app/appointment-status-badge'
 import { NewAppointmentModal } from '@/components/app/new-appointment-modal'
+import { PostConsultationModal } from '@/components/app/post-consultation-modal'
 import { updateAppointmentStatus, cancelAppointment } from '@/lib/actions/appointments'
+import { isAppointmentPast } from '@/lib/utils'
 import type {
   AppointmentWithRelations,
   Patient,
@@ -39,6 +41,7 @@ export function AgendaView({
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [openNewAppointment, setOpenNewAppointment] = useState(false)
+  const [postConsultationApt, setPostConsultationApt] = useState<AppointmentWithRelations | null>(null)
 
   const monday = new Date(weekStart + 'T00:00:00')
   const sunday = addDays(monday, 6)
@@ -168,6 +171,7 @@ export function AgendaView({
                       appointment={apt}
                       onStatusUpdate={handleStatusUpdate}
                       onCancel={handleCancel}
+                      onPostConsultation={setPostConsultationApt}
                     />
                   ))}
                 </div>
@@ -196,6 +200,18 @@ export function AgendaView({
         patients={patients}
         professional={professional}
       />
+
+      {/* Post consultation modal */}
+      {postConsultationApt && (
+        <PostConsultationModal
+          appointment={postConsultationApt}
+          open={!!postConsultationApt}
+          onClose={() => {
+            setPostConsultationApt(null)
+            router.refresh()
+          }}
+        />
+      )}
     </div>
   )
 }
@@ -205,10 +221,12 @@ function TurnoCard({
   appointment,
   onStatusUpdate,
   onCancel,
+  onPostConsultation,
 }: {
   appointment: AppointmentWithRelations
   onStatusUpdate: (id: string, status: AppointmentStatus) => void
   onCancel: (id: string, patientName: string) => void
+  onPostConsultation: (apt: AppointmentWithRelations) => void
 }) {
   const startTime = format(new Date(appointment.start_at), 'HH:mm')
   const endTime = format(new Date(appointment.end_at), 'HH:mm')
@@ -222,7 +240,10 @@ function TurnoCard({
   const showReminder = status === 'scheduled' &&
     !!appointment.patients?.email &&
     !appointment.appointment_confirmations?.responded_at
-  const hasActions = showCompleted || showNoShow || showCancel || showReminder
+  const showViewConsultation = status === 'completed'
+  const showRegisterConsultation = (status === 'confirmed' || status === 'scheduled') &&
+    isAppointmentPast(appointment.start_at)
+  const hasActions = showCompleted || showNoShow || showCancel || showReminder || showViewConsultation || showRegisterConsultation
 
   const handleSendReminder = async () => {
     try {
@@ -258,6 +279,18 @@ function TurnoCard({
               <MoreVertical className="h-4 w-4" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              {showViewConsultation && (
+                <DropdownMenuItem onClick={() => onPostConsultation(appointment)}>
+                  <FileText className="mr-2 h-4 w-4" />
+                  Ver / editar consulta
+                </DropdownMenuItem>
+              )}
+              {showRegisterConsultation && (
+                <DropdownMenuItem onClick={() => onPostConsultation(appointment)}>
+                  <ClipboardList className="mr-2 h-4 w-4" />
+                  Registrar consulta
+                </DropdownMenuItem>
+              )}
               {showReminder && (
                 <DropdownMenuItem onClick={handleSendReminder}>
                   <Bell className="mr-2 h-4 w-4" />

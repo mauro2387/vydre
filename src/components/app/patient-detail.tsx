@@ -4,7 +4,8 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { Phone, Mail, Calendar, ChevronDown, ChevronUp, Pencil } from 'lucide-react'
+import { Phone, Mail, Calendar, ChevronDown, ChevronUp, Pencil, Sparkles, Loader2 } from 'lucide-react'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
@@ -18,6 +19,7 @@ import {
 import { AppointmentStatusBadge } from '@/components/app/appointment-status-badge'
 import { EditPatientModal } from '@/components/app/edit-patient-modal'
 import { updatePatient } from '@/lib/actions/patients'
+import { generateSummary } from '@/lib/actions/consultation'
 import type { PatientDetail, AppointmentStatus } from '@/lib/types/database.types'
 
 const getInitials = (name: string) =>
@@ -136,10 +138,12 @@ export function PatientDetailView({ patient }: { patient: PatientDetail }) {
 
                     {hasNotes ? (
                       <ConsultationNotesCollapsible
+                        consultationNoteId={apt.consultation_notes!.id}
                         reason={apt.consultation_notes!.reason}
                         treatment={apt.consultation_notes!.treatment}
                         observations={apt.consultation_notes!.observations}
                         summarySentAt={summary?.sent_at ?? null}
+                        summaryContent={summary?.edited_content ?? summary?.content ?? null}
                         hasSummary={!!summary}
                       />
                     ) : (
@@ -194,19 +198,39 @@ export function PatientDetailView({ patient }: { patient: PatientDetail }) {
 
 // Collapsible subcomponent for consultation notes
 function ConsultationNotesCollapsible({
+  consultationNoteId,
   reason,
   treatment,
   observations,
   summarySentAt,
+  summaryContent,
   hasSummary,
 }: {
+  consultationNoteId: string
   reason: string | null
   treatment: string | null
   observations: string | null
   summarySentAt: string | null
+  summaryContent: string | null
   hasSummary: boolean
 }) {
+  const router = useRouter()
   const [open, setOpen] = useState(false)
+  const [generating, setGenerating] = useState(false)
+  const [showSummary, setShowSummary] = useState(false)
+
+  const handleGenerateSummary = async () => {
+    try {
+      setGenerating(true)
+      await generateSummary(consultationNoteId)
+      router.refresh()
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Error al generar resumen'
+      toast.error(message)
+    } finally {
+      setGenerating(false)
+    }
+  }
 
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
@@ -223,16 +247,49 @@ function ConsultationNotesCollapsible({
           {treatment && <p><span className="font-medium">Tratamiento:</span> {treatment}</p>}
           {observations && <p><span className="font-medium">Observaciones:</span> {observations}</p>}
           {hasSummary && (
-            <div className="mt-2">
+            <div className="mt-2 space-y-2">
               {summarySentAt ? (
                 <Badge variant="secondary" className="bg-green-100 text-green-700 hover:bg-green-100">
                   Resumen enviado
                 </Badge>
               ) : (
-                <Badge variant="secondary" className="bg-yellow-100 text-yellow-700 hover:bg-yellow-100">
-                  Resumen pendiente de envío
+                <Badge variant="secondary" className="bg-blue-100 text-blue-700 hover:bg-blue-100">
+                  Resumen generado
                 </Badge>
               )}
+              <button
+                type="button"
+                className="block text-xs text-primary hover:underline"
+                onClick={() => setShowSummary(!showSummary)}
+              >
+                {showSummary ? 'Ocultar resumen' : 'Ver resumen'}
+              </button>
+              {showSummary && summaryContent && (
+                <p className="whitespace-pre-wrap rounded-md bg-blue-50 p-3 text-sm">{summaryContent}</p>
+              )}
+            </div>
+          )}
+          {!hasSummary && (
+            <div className="mt-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleGenerateSummary}
+                disabled={generating}
+                className="h-7 text-xs"
+              >
+                {generating ? (
+                  <>
+                    <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                    Generando...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="mr-1 h-3 w-3" />
+                    Generar resumen
+                  </>
+                )}
+              </Button>
             </div>
           )}
         </div>
