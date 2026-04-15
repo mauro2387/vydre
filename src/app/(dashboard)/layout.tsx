@@ -25,10 +25,18 @@ export default async function DashboardLayout({
     redirect('/onboarding')
   }
 
+  // Fetch unread notification count
+  const { count: unreadCount } = await supabase
+    .from('notifications')
+    .select('*', { count: 'exact', head: true })
+    .eq('professional_id', professional.id)
+    .eq('read', false)
+
   return (
     <DashboardShell
       professionalName={professional.name}
       professionalSpecialty={professional.specialty}
+      unreadNotifications={unreadCount ?? 0}
     >
       {children}
     </DashboardShell>

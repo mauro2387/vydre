@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { User, Clock, Timer, Globe, Shield, Loader2 } from 'lucide-react'
+import { User, Clock, Timer, Globe, Shield, Loader2, KeyRound, AlertTriangle, Mail } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -27,8 +27,11 @@ import {
   updateProfile,
   updateSchedule,
   updateTimezone,
+  changePassword,
+  signOutAllSessions,
 } from '@/lib/actions/professional'
 import { parseActionError } from '@/lib/utils/error-messages'
+import { PasswordStrength } from '@/components/app/password-strength'
 import type { Professional } from '@/lib/types/database.types'
 
 const specialties = [
@@ -431,30 +434,191 @@ function AccountSection({
   const dateStr = format(new Date(createdAt), "d 'de' MMMM 'de' yyyy", { locale: es })
 
   return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Shield className="h-5 w-5" />
+            Cuenta
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Mail className="h-4 w-4" />
+              Email
+            </span>
+            <span className="text-sm font-medium">{userEmail}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">Cuenta creada</span>
+            <span className="text-sm font-medium">{dateStr}</span>
+          </div>
+          <div className="flex flex-wrap gap-2 pt-2">
+            <Badge variant="secondary" className="bg-green-100 text-green-700 hover:bg-green-100">
+              Médico fundador · Acceso de por vida
+            </Badge>
+            <Badge variant="secondary" className="bg-green-100 text-green-700 hover:bg-green-100">
+              <span className="relative mr-1.5 flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500" />
+              </span>
+              Plan activo
+            </Badge>
+          </div>
+        </CardContent>
+      </Card>
+
+      <ChangePasswordSection />
+
+      <DangerZoneSection />
+    </div>
+  )
+}
+
+// SECTION 5b — Change password
+function ChangePasswordSection() {
+  const [saving, setSaving] = useState(false)
+  const [currentPassword, setCurrentPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+
+  const isValid =
+    currentPassword.length > 0 &&
+    newPassword.length >= 8 &&
+    /[a-zA-Z]/.test(newPassword) &&
+    /[0-9]/.test(newPassword) &&
+    newPassword === confirmPassword
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!isValid) return
+
+    try {
+      setSaving(true)
+      await changePassword(currentPassword, newPassword)
+      toast.success('Contraseña actualizada correctamente')
+      setCurrentPassword('')
+      setNewPassword('')
+      setConfirmPassword('')
+    } catch (error) {
+      toast.error(parseActionError(error))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Shield className="h-5 w-5" />
-          Cuenta
+          <KeyRound className="h-5 w-5" />
+          Cambiar contraseña
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="current-pw">Contraseña actual</Label>
+            <Input
+              id="current-pw"
+              type="password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              autoComplete="current-password"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="new-pw">Nueva contraseña</Label>
+            <Input
+              id="new-pw"
+              type="password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              autoComplete="new-password"
+            />
+            <PasswordStrength password={newPassword} />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="confirm-pw">Confirmar nueva contraseña</Label>
+            <Input
+              id="confirm-pw"
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              autoComplete="new-password"
+            />
+            {confirmPassword && confirmPassword !== newPassword && (
+              <p className="text-sm text-destructive">Las contraseñas no coinciden</p>
+            )}
+          </div>
+
+          <div className="flex justify-end">
+            <Button type="submit" disabled={!isValid || saving}>
+              {saving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Guardando...
+                </>
+              ) : (
+                'Cambiar contraseña'
+              )}
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
+  )
+}
+
+// SECTION 5c — Danger zone
+function DangerZoneSection() {
+  const [closing, setClosing] = useState(false)
+
+  const handleSignOutAll = async () => {
+    try {
+      setClosing(true)
+      await signOutAllSessions()
+    } catch (error) {
+      toast.error(parseActionError(error))
+      setClosing(false)
+    }
+  }
+
+  return (
+    <Card className="border-red-200">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-red-700">
+          <AlertTriangle className="h-5 w-5" />
+          Zona de peligro
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
         <div className="flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">Email</span>
-          <span className="text-sm font-medium">{userEmail}</span>
+          <div>
+            <p className="text-sm font-medium">Cerrar todas las sesiones</p>
+            <p className="text-sm text-muted-foreground">
+              Se cerrará la sesión en todos los dispositivos, incluido este.
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            className="border-red-200 text-red-700 hover:bg-red-50 hover:text-red-800"
+            onClick={handleSignOutAll}
+            disabled={closing}
+          >
+            {closing ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              'Cerrar sesiones'
+            )}
+          </Button>
         </div>
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">Cuenta creada</span>
-          <span className="text-sm font-medium">{dateStr}</span>
-        </div>
-        <div className="pt-2">
-          <Badge variant="secondary" className="bg-green-100 text-green-700 hover:bg-green-100">
-            Plan gratuito · Médico fundador
-          </Badge>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Como médico fundador tenés acceso de por vida sin costo.
-          </p>
-        </div>
+        <p className="text-xs text-muted-foreground">
+          ¿Querés eliminar tu cuenta? Escribinos a contacto@vydre.com
+        </p>
       </CardContent>
     </Card>
   )

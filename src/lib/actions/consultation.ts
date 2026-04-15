@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { getProfessional } from './professional'
+import { createNotification } from './notifications'
 import { generateConsultationSummary } from '@/lib/ai'
 import { sendSummaryEmail } from '@/lib/email'
 import { format } from 'date-fns'
@@ -210,6 +211,18 @@ export async function sendSummary(summaryId: string) {
     recipient: note.appointments.patients.email,
     sent_at: new Date().toISOString(),
   })
+
+  // Notify professional (best-effort)
+  try {
+    await createNotification({
+      professionalId: professional.id,
+      type: 'summary_sent',
+      title: `Resumen enviado a ${note.appointments.patients.name}`,
+      actionUrl: '/pacientes',
+    })
+  } catch {
+    // best-effort
+  }
 
   revalidatePath('/pacientes')
   revalidatePath('/agenda')

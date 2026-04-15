@@ -143,3 +143,35 @@ export async function checkActivationComplete() {
       .eq('user_id', user.id)
   }
 }
+
+export async function changePassword(currentPassword: string, newPassword: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user || !user.email) redirect('/login')
+
+  // Re-authenticate with current password
+  const { error: signInError } = await supabase.auth.signInWithPassword({
+    email: user.email,
+    password: currentPassword,
+  })
+
+  if (signInError) {
+    throw new Error('La contraseña actual es incorrecta')
+  }
+
+  const { error } = await supabase.auth.updateUser({
+    password: newPassword,
+  })
+
+  if (error) throw new Error(`Error al cambiar contraseña: ${error.message}`)
+}
+
+export async function signOutAllSessions() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  const { error } = await supabase.auth.signOut({ scope: 'global' })
+  if (error) throw new Error(`Error al cerrar sesiones: ${error.message}`)
+  redirect('/login')
+}

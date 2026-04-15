@@ -9,10 +9,12 @@ import { SidebarNav } from './sidebar-nav'
 export function DashboardShell({
   professionalName,
   professionalSpecialty,
+  unreadNotifications,
   children,
 }: {
   professionalName: string
   professionalSpecialty: string
+  unreadNotifications: number
   children: React.ReactNode
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -68,6 +70,7 @@ export function DashboardShell({
         <SidebarNav
           professionalName={professionalName}
           professionalSpecialty={professionalSpecialty}
+          unreadNotifications={unreadNotifications}
         />
       </aside>
 

@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
+import { NotificationsPopover } from '@/components/app/notifications-popover'
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -44,9 +45,11 @@ function getInitials(name: string): string {
 export function SidebarNav({
   professionalName,
   professionalSpecialty,
+  unreadNotifications,
 }: {
   professionalName: string
   professionalSpecialty: string
+  unreadNotifications: number
 }) {
   const pathname = usePathname()
   const router = useRouter()
@@ -59,8 +62,9 @@ export function SidebarNav({
 
   return (
     <div className="flex h-full flex-col">
-      <div className="p-6">
+      <div className="flex items-center justify-between p-6">
         <h1 className="text-xl font-bold">Vydre</h1>
+        <NotificationsPopover initialCount={unreadNotifications} />
       </div>
       <Separator />
       <nav className="flex-1 space-y-1 p-4">

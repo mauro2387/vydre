@@ -258,6 +258,78 @@ export type Database = {
         }
         Relationships: []
       }
+      waitlist: {
+        Row: {
+          id: string
+          name: string
+          email: string
+          specialty: string | null
+          phone: string | null
+          source: string
+          status: string
+          notes: string | null
+          invited_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          email: string
+          specialty?: string | null
+          phone?: string | null
+          source?: string
+          status?: string
+          notes?: string | null
+          invited_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          email?: string
+          specialty?: string | null
+          phone?: string | null
+          source?: string
+          status?: string
+          notes?: string | null
+          invited_at?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          id: string
+          professional_id: string
+          type: string
+          title: string
+          body: string | null
+          read: boolean
+          action_url: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          professional_id: string
+          type: string
+          title: string
+          body?: string | null
+          read?: boolean
+          action_url?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          professional_id?: string
+          type?: string
+          title?: string
+          body?: string | null
+          read?: boolean
+          action_url?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -279,6 +351,8 @@ export type AppointmentConfirmation = Database['public']['Tables']['appointment_
 export type ConsultationNote = Database['public']['Tables']['consultation_notes']['Row']
 export type GeneratedSummary = Database['public']['Tables']['generated_summaries']['Row']
 export type Message = Database['public']['Tables']['messages']['Row']
+export type WaitlistEntry = Database['public']['Tables']['waitlist']['Row']
+export type Notification = Database['public']['Tables']['notifications']['Row']
 
 // Status types
 export type AppointmentStatus = 'scheduled' | 'confirmed' | 'cancelled' | 'completed' | 'no_show'

@@ -2,6 +2,7 @@ import { Resend } from 'resend'
 import { render } from '@react-email/render'
 import { ReminderEmail } from '@/emails/reminder-email'
 import { SummaryEmail } from '@/emails/summary-email'
+import { WaitlistWelcomeEmail } from '@/emails/waitlist-welcome-email'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
@@ -65,6 +66,27 @@ export async function sendSummaryEmail(params: {
     from: getFromEmail(),
     to: params.to,
     subject: `Resumen de tu consulta — ${params.appointmentDate}`,
+    html,
+  })
+
+  if (error) throw new Error(`Error enviando email: ${error.message}`)
+  return data
+}
+
+export async function sendWaitlistWelcomeEmail(params: {
+  to: string
+  name: string
+  position: number
+}) {
+  const html = await render(WaitlistWelcomeEmail({
+    name: params.name,
+    position: params.position,
+  }))
+
+  const { data, error } = await resend.emails.send({
+    from: getFromEmail(),
+    to: params.to,
+    subject: '¡Estás en la lista de Vydre!',
     html,
   })
 

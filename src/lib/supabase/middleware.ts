@@ -34,6 +34,8 @@ export async function updateSession(request: NextRequest) {
     url.pathname.startsWith('/login') ||
     url.pathname.startsWith('/registro') ||
     url.pathname.startsWith('/confirmar') ||
+    url.pathname.startsWith('/privacidad') ||
+    url.pathname.startsWith('/api/waitlist') ||
     url.pathname === '/'
 
   if (!user && !isPublicRoute) {

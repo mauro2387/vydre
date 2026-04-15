@@ -103,6 +103,39 @@ export default async function ConfirmarPage({
         .eq('id', appointment.id)
     }
 
+    // Create notification for the professional (best-effort)
+    if (appointment) {
+      const { data: apt } = await supabase
+        .from('appointments')
+        .select('professional_id, patients (name)')
+        .eq('id', appointment.id)
+        .single()
+
+      const aptData = apt as unknown as {
+        professional_id: string
+        patients: { name: string } | null
+      } | null
+
+      if (aptData?.professional_id) {
+        const patientName = aptData.patients?.name ?? 'Un paciente'
+        try {
+          await supabase.from('notifications').insert({
+            professional_id: aptData.professional_id,
+            type: r === 'si' ? 'appointment_confirmed' : 'appointment_declined',
+            title: r === 'si'
+              ? `${patientName} confirmó su turno`
+              : `${patientName} canceló su turno`,
+            body: r === 'si'
+              ? `Turno el ${formattedDate} a las ${appointmentTime}`
+              : `Turno el ${formattedDate} a las ${appointmentTime} — revisá la agenda`,
+            action_url: '/agenda',
+          })
+        } catch {
+          // best-effort
+        }
+      }
+    }
+
     if (r === 'si') {
       return (
         <PageWrapper bg="bg-green-50">
