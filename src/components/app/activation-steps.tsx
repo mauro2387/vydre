@@ -44,7 +44,7 @@ export function ActivationSteps({
   const router = useRouter()
   const [step1Done, setStep1Done] = useState(professional.first_patient_created)
   const [step2Done, setStep2Done] = useState(professional.first_appointment_created)
-  const [step3Done, setStep3Done] = useState(professional.first_reminder_sent)
+  const [step3Done] = useState(professional.first_reminder_sent)
   const [allComplete, setAllComplete] = useState(
     professional.first_patient_created &&
     professional.first_appointment_created &&
@@ -98,16 +98,6 @@ export function ActivationSteps({
       toast.error(parseActionError(e))
     } finally {
       setPatientLoading(false)
-    }
-  }
-
-  function handleAppointmentCreated() {
-    setStep2Done(true)
-    setOpenAppointmentDialog(false)
-    toast.success('¡Turno creado! Ahora enviá un recordatorio desde la agenda.')
-    // Check if all complete
-    if (step1Done && step3Done) {
-      setAllComplete(true)
     }
   }
 

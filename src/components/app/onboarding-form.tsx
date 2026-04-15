@@ -101,6 +101,7 @@ export function OnboardingForm({ initialName }: { initialName: string }) {
     }
   }
 
+  // eslint-disable-next-line react-hooks/incompatible-library -- react-hook-form watch() needed for conditional rendering
   const specialtyValue = watch('specialty')
   const durationValue = watch('appointment_duration')
 

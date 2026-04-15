@@ -14,15 +14,21 @@ export async function getPatients(search?: string): Promise<Patient[]> {
   const professional = await getProfessional()
   if (!professional) return []
 
-  let query = supabase
+  // FIX: use unaccent RPC for accent-insensitive search (García, Pérez, etc.)
+  if (search) {
+    const { data, error } = await supabase.rpc('search_patients', {
+      prof_id: professional.id,
+      search_term: search,
+    })
+    if (error) return []
+    return data
+  }
+
+  const query = supabase
     .from('patients')
     .select('*')
     .eq('professional_id', professional.id)
     .order('name', { ascending: true })
-
-  if (search) {
-    query = query.ilike('name', `%${search}%`)
-  }
 
   const { data, error } = await query
 

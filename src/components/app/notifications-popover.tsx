@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import { Bell, CheckCircle, XCircle, Send, Info, CheckCheck } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { Button } from '@/components/ui/button'
 import {
   Popover,
   PopoverContent,

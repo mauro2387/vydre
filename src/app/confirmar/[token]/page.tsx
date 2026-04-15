@@ -67,13 +67,13 @@ export default async function ConfirmarPage({
     ? format(new Date(appointment.start_at), 'HH:mm')
     : ''
 
-  // Already responded
-  if (confirmation.response && !r) {
+  // FIX: always show "ya respondiste" if already responded, even with ?r= param
+  if (confirmation.response) {
     const isConfirmed = confirmation.response === 'confirmed'
     return (
       <PageWrapper>
         <Info className="mx-auto mb-4 h-12 w-12 text-blue-500" />
-        <h1 className="text-xl font-bold text-gray-900">Ya respondiste anteriormente</h1>
+        <h1 className="text-xl font-bold text-gray-900">Ya respondiste a este recordatorio</h1>
         <p className="mt-2 text-gray-600">
           Tu turno del {formattedDate} a las {appointmentTime} está{' '}
           <span className={isConfirmed ? 'font-semibold text-green-600' : 'font-semibold text-yellow-600'}>

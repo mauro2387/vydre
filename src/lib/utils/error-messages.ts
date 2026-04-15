@@ -7,7 +7,7 @@ export function parseActionError(error: unknown): string {
 
   // Map known patterns
   if (message.includes('already exists')) return 'Ya existe un registro con esos datos'
-  if (message.includes('not found') || message.includes('no encontr')) return 'No se encontró el elemento solicitado'
+  if (message.includes('not found') || message.includes('no encontr')) return 'No pudimos encontrar lo que buscás'
   if (message.includes('duplicate key')) return 'Ya existe un registro con esos datos'
 
   return 'Algo salió mal. Intentá de nuevo.'

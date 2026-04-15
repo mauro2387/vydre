@@ -335,7 +335,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      search_patients: {
+        Args: {
+          prof_id: string
+          search_term: string
+        }
+        Returns: Database['public']['Tables']['patients']['Row'][]
+      }
     }
     Enums: {
       [_ in never]: never

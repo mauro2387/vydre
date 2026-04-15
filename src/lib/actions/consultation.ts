@@ -129,6 +129,23 @@ export async function updateSummary(summaryId: string, editedContent: string) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
+  const professional = await getProfessional()
+  if (!professional) throw new Error('Profesional no encontrado')
+
+  // FIX: verify summary belongs to this professional via chain
+  const { data: summary } = await supabase
+    .from('generated_summaries')
+    .select('id, consultation_notes(appointments(professional_id))')
+    .eq('id', summaryId)
+    .single()
+
+  const chain = summary?.consultation_notes as unknown as {
+    appointments: { professional_id: string } | null
+  } | null
+  if (chain?.appointments?.professional_id !== professional.id) {
+    throw new Error('No autorizado')
+  }
+
   const { error } = await supabase
     .from('generated_summaries')
     .update({ edited_content: editedContent })

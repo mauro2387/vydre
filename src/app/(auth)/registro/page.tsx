@@ -40,6 +40,7 @@ export default function RegistroPage() {
     resolver: zodResolver(registroSchema),
   })
 
+  // eslint-disable-next-line react-hooks/incompatible-library -- react-hook-form watch() is needed for password strength
   const passwordValue = watch('password') ?? ''
 
   async function onSubmit(data: RegistroForm) {

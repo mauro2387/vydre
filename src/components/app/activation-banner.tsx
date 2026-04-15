@@ -12,6 +12,7 @@ export function ActivationBanner({ professional }: { professional: Professional 
 
   useEffect(() => {
     const stored = sessionStorage.getItem('activation-banner-dismissed')
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing with sessionStorage
     if (stored === 'true') setDismissed(true)
   }, [])
 

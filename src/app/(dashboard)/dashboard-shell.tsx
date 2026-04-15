@@ -22,6 +22,7 @@ export function DashboardShell({
 
   // Close sidebar on navigation
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing with Next.js router
     setSidebarOpen(false)
   }, [pathname])
 

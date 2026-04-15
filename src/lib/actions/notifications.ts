@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 
+// FIX: added auth check — validates professionalId matches logged-in user
 export async function createNotification(params: {
   professionalId: string
   type: 'appointment_confirmed' | 'appointment_declined' | 'appointment_reminder_sent' | 'summary_sent' | 'system'
@@ -12,6 +13,18 @@ export async function createNotification(params: {
   actionUrl?: string
 }) {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return
+
+  // Verify the professionalId belongs to the authenticated user
+  const { data: professional } = await supabase
+    .from('professionals')
+    .select('id')
+    .eq('user_id', user.id)
+    .eq('id', params.professionalId)
+    .single()
+
+  if (!professional) return
 
   const { error } = await supabase.from('notifications').insert({
     professional_id: params.professionalId,
@@ -77,10 +90,20 @@ export async function markNotificationRead(notificationId: string) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
+  // FIX: added professional_id filter — ensures user can only mark own notifications
+  const { data: professional } = await supabase
+    .from('professionals')
+    .select('id')
+    .eq('user_id', user.id)
+    .single()
+
+  if (!professional) return
+
   await supabase
     .from('notifications')
     .update({ read: true })
     .eq('id', notificationId)
+    .eq('professional_id', professional.id)
 
   revalidatePath('/(dashboard)')
 }

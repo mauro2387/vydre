@@ -117,7 +117,8 @@ export function PatientDetailView({ patient }: { patient: PatientDetail }) {
 
         {(!patient.appointments || patient.appointments.length === 0) ? (
           <p className="py-4 text-sm text-muted-foreground">
-            Este paciente no tiene turnos registrados aún
+            Este paciente no tiene turnos registrados aún.{' '}
+            <a href="/agenda" className="font-medium text-blue-600 hover:underline">Crear turno</a>
           </p>
         ) : (
           <div className="space-y-2">

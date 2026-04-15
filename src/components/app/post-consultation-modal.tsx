@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -137,6 +137,7 @@ export function PostConsultationModal({
         .then(() => setTimeout(() => setShowSaved(false), 2000))
     }, 1000)
     return () => clearTimeout(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: only trigger on editedContent changes
   }, [editedContent])
 
   return (

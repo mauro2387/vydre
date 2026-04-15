@@ -1,9 +1,10 @@
+import Link from 'next/link'
 import { CalendarDays, CalendarX, CheckCircle, Clock, AlertTriangle, Calendar, Send, Activity } from 'lucide-react'
 import { format, formatDistanceToNow } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { getTodayAppointments, getUpcomingUnconfirmed, getRecentActivity } from '@/lib/actions/appointments'
 import { getProfessional } from '@/lib/actions/professional'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { AppointmentStatusBadge } from '@/components/app/appointment-status-badge'
 import { ActivationBanner } from '@/components/app/activation-banner'
@@ -89,6 +90,9 @@ export default async function DashboardPage() {
             <CardContent className="flex flex-col items-center justify-center py-12 text-center">
               <CalendarX className="mb-4 h-12 w-12 text-muted-foreground/50" />
               <p className="text-muted-foreground">No tenés turnos agendados para hoy</p>
+              <Link href="/agenda" className="mt-3 text-sm font-medium text-blue-600 hover:underline">
+                Ir a la agenda para crear uno
+              </Link>
             </CardContent>
           </Card>
         ) : (
