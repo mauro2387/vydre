@@ -5,27 +5,27 @@ import type { AppointmentStatus } from '@/lib/types/database.types'
 const statusConfig: Record<string, { label: string; className: string }> = {
   completed: {
     label: 'Realizado',
-    className: 'bg-gray-100 text-gray-700 hover:bg-gray-100',
+    className: 'bg-gray-100 text-gray-800 hover:bg-gray-100',
   },
   no_show: {
     label: 'Ausente',
-    className: 'bg-red-100 text-red-700 hover:bg-red-100',
+    className: 'bg-red-100 text-red-800 hover:bg-red-100',
   },
   cancelled: {
     label: 'Cancelado',
-    className: 'bg-red-100 text-red-700 hover:bg-red-100',
+    className: 'bg-red-100 text-red-800 hover:bg-red-100',
   },
   confirmed: {
     label: 'Confirmado',
-    className: 'bg-green-100 text-green-700 hover:bg-green-100',
+    className: 'bg-green-100 text-green-800 hover:bg-green-100',
   },
   declined: {
     label: 'No viene',
-    className: 'bg-orange-100 text-orange-700 hover:bg-orange-100',
+    className: 'bg-orange-100 text-orange-800 hover:bg-orange-100',
   },
   pending: {
     label: 'Pendiente',
-    className: 'bg-yellow-100 text-yellow-700 hover:bg-yellow-100',
+    className: 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100',
   },
 }
 

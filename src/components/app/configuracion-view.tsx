@@ -28,6 +28,7 @@ import {
   updateSchedule,
   updateTimezone,
 } from '@/lib/actions/professional'
+import { parseActionError } from '@/lib/utils/error-messages'
 import type { Professional } from '@/lib/types/database.types'
 
 const specialties = [
@@ -75,7 +76,7 @@ export function ConfiguracionView({
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold">Configuración</h1>
+        <h1 className="text-2xl font-semibold">Configuración</h1>
         <p className="text-muted-foreground">Gestioná tu perfil y preferencias</p>
       </div>
 
@@ -129,8 +130,7 @@ function ProfileSection({ professional }: { professional: Professional }) {
       initialRef.current = JSON.stringify(data)
       toast.success('Perfil actualizado')
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Error al guardar'
-      toast.error(message)
+      toast.error(parseActionError(error))
     } finally {
       setSaving(false)
     }
@@ -224,8 +224,7 @@ function ScheduleSection({ professional }: { professional: Professional }) {
       initialRef.current = JSON.stringify(schedule)
       toast.success('Horarios actualizados')
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Error al guardar'
-      toast.error(message)
+      toast.error(parseActionError(error))
     } finally {
       setSaving(false)
     }
@@ -281,8 +280,7 @@ function DurationSection({ professional }: { professional: Professional }) {
       initialRef.current = duration
       toast.success('Duración actualizada')
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Error al guardar'
-      toast.error(message)
+      toast.error(parseActionError(error))
     } finally {
       setSaving(false)
     }
@@ -364,8 +362,7 @@ function TimezoneSection({ professional }: { professional: Professional }) {
       initialRef.current = tz
       toast.success('Zona horaria actualizada')
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Error al guardar'
-      toast.error(message)
+      toast.error(parseActionError(error))
     } finally {
       setSaving(false)
     }

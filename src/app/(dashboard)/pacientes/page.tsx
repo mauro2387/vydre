@@ -1,6 +1,7 @@
 import { getPatients, getPatientDetail } from '@/lib/actions/patients'
 import { PatientList } from '@/components/app/patient-list'
 import { PatientDetailView } from '@/components/app/patient-detail'
+import { PacientesMobileWrapper } from '@/components/app/pacientes-mobile-wrapper'
 import { Users } from 'lucide-react'
 
 export default async function PacientesPage({
@@ -18,19 +19,17 @@ export default async function PacientesPage({
   ])
 
   return (
-    <div className="flex h-[calc(100vh-64px)] gap-6">
-      {/* Left column — patient list */}
-      <div className="w-[380px] shrink-0 overflow-y-auto">
+    <PacientesMobileWrapper
+      selectedId={selectedId}
+      listSlot={
         <PatientList
           patients={patients}
           selectedId={selectedId}
           searchQuery={q}
         />
-      </div>
-
-      {/* Right column — patient detail */}
-      <div className="flex-1 overflow-y-auto">
-        {patientDetail ? (
+      }
+      detailSlot={
+        patientDetail ? (
           <PatientDetailView patient={patientDetail} />
         ) : (
           <div className="flex h-full flex-col items-center justify-center text-center">
@@ -42,8 +41,8 @@ export default async function PacientesPage({
               O creá uno nuevo con el botón de arriba
             </p>
           </div>
-        )}
-      </div>
-    </div>
+        )
+      }
+    />
   )
 }

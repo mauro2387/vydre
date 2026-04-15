@@ -16,7 +16,9 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { toast } from 'sonner'
 import { updatePatient } from '@/lib/actions/patients'
+import { parseActionError } from '@/lib/utils/error-messages'
 import type { Patient } from '@/lib/types/database.types'
 
 const editSchema = z.object({
@@ -66,10 +68,11 @@ export function EditPatientModal({
         email: data.email || undefined,
         notes: data.notes || undefined,
       })
+      toast.success(`Datos de ${data.name} actualizados`)
       onClose()
       router.refresh()
     } catch (error) {
-      setServerError(error instanceof Error ? error.message : 'Error al actualizar')
+      setServerError(parseActionError(error))
     } finally {
       setLoading(false)
     }

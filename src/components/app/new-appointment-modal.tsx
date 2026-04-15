@@ -24,8 +24,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command'
+import { ChevronsUpDown } from 'lucide-react'
+import { toast } from 'sonner'
 import { createAppointment } from '@/lib/actions/appointments'
 import { createPatient } from '@/lib/actions/patients'
+import { parseActionError } from '@/lib/utils/error-messages'
 import type { Patient, Professional } from '@/lib/types/database.types'
 
 // Schemas
@@ -73,6 +89,7 @@ export function NewAppointmentModal({
   const [loading, setLoading] = useState(false)
   const [openNewPatient, setOpenNewPatient] = useState(false)
   const [localPatients, setLocalPatients] = useState<Patient[]>(patients)
+  const [patientPopoverOpen, setPatientPopoverOpen] = useState(false)
 
   const todayStr = format(new Date(), 'yyyy-MM-dd')
 
@@ -144,6 +161,7 @@ export function NewAppointmentModal({
       const startDateTime = new Date(`${data.date}T${data.start_time}:00`)
       const endDateTime = addMinutes(startDateTime, duration)
 
+      const selectedPatient = localPatients.find(p => p.id === data.patient_id)
       await createAppointment({
         patient_id: data.patient_id,
         start_at: startDateTime.toISOString(),
@@ -151,15 +169,12 @@ export function NewAppointmentModal({
         notes: data.notes || undefined,
       })
 
+      toast.success(`Turno creado para ${selectedPatient?.name ?? 'el paciente'}`)
       reset()
       onOpenChange(false)
       router.refresh()
     } catch (error) {
-      if (error instanceof Error) {
-        setServerError(error.message)
-      } else {
-        setServerError('Error al crear el turno')
-      }
+      setServerError(parseActionError(error))
     } finally {
       setLoading(false)
     }
@@ -185,30 +200,78 @@ export function NewAppointmentModal({
             {/* Patient select */}
             <div className="space-y-2">
               <Label>Paciente</Label>
-              <Select
-                value={watch('patient_id') || undefined}
-                onValueChange={(val) => {
-                  if (val === '__new__') {
-                    setOpenNewPatient(true)
-                  } else if (val) {
-                    setValue('patient_id', val as string, { shouldValidate: true })
-                  }
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar paciente..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {localPatients.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.name}
+              {localPatients.length > 20 ? (
+                <Popover open={patientPopoverOpen} onOpenChange={setPatientPopoverOpen}>
+                  <PopoverTrigger
+                    className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm text-muted-foreground hover:bg-accent"
+                  >
+                    <span className={watch('patient_id') ? 'text-foreground' : ''}>
+                      {watch('patient_id')
+                        ? localPatients.find(p => p.id === watch('patient_id'))?.name ?? 'Seleccionar paciente...'
+                        : 'Seleccionar paciente...'}
+                    </span>
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </PopoverTrigger>
+                  <PopoverContent className="p-0" align="start">
+                    <Command>
+                      <CommandInput placeholder="Buscar paciente..." />
+                      <CommandList>
+                        <CommandEmpty>Sin resultados</CommandEmpty>
+                        <CommandGroup>
+                          {localPatients.map((p) => (
+                            <CommandItem
+                              key={p.id}
+                              value={p.name}
+                              data-checked={watch('patient_id') === p.id}
+                              onSelect={() => {
+                                setValue('patient_id', p.id, { shouldValidate: true })
+                                setPatientPopoverOpen(false)
+                              }}
+                            >
+                              {p.name}
+                            </CommandItem>
+                          ))}
+                          <CommandItem
+                            value="__nuevo_paciente__"
+                            onSelect={() => {
+                              setOpenNewPatient(true)
+                              setPatientPopoverOpen(false)
+                            }}
+                            className="text-primary font-medium"
+                          >
+                            + Nuevo paciente
+                          </CommandItem>
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              ) : (
+                <Select
+                  value={watch('patient_id') || undefined}
+                  onValueChange={(val) => {
+                    if (val === '__new__') {
+                      setOpenNewPatient(true)
+                    } else if (val) {
+                      setValue('patient_id', val as string, { shouldValidate: true })
+                    }
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccionar paciente..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {localPatients.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.name}
+                      </SelectItem>
+                    ))}
+                    <SelectItem value="__new__" className="text-primary font-medium">
+                      + Nuevo paciente
                     </SelectItem>
-                  ))}
-                  <SelectItem value="__new__" className="text-primary font-medium">
-                    + Nuevo paciente
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+                  </SelectContent>
+                </Select>
+              )}
               {errors.patient_id && (
                 <p className="text-sm text-destructive">{errors.patient_id.message}</p>
               )}
@@ -352,14 +415,11 @@ function NewPatientDialog({
         updated_at: new Date().toISOString(),
       }
 
+      toast.success(`Paciente ${data.name} agregado`)
       reset()
       onCreated(tempPatient)
     } catch (error) {
-      if (error instanceof Error) {
-        setServerError(error.message)
-      } else {
-        setServerError('Error al crear el paciente')
-      }
+      setServerError(parseActionError(error))
     } finally {
       setLoading(false)
     }

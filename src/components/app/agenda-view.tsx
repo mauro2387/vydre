@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
 import { format, addDays, isSameDay } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { ChevronLeft, ChevronRight, Plus, MoreVertical, Bell, FileText, ClipboardList } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Plus, MoreVertical, Bell, FileText, ClipboardList, CalendarPlus } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -20,6 +20,8 @@ import { NewAppointmentModal } from '@/components/app/new-appointment-modal'
 import { PostConsultationModal } from '@/components/app/post-consultation-modal'
 import { updateAppointmentStatus, cancelAppointment } from '@/lib/actions/appointments'
 import { isAppointmentPast } from '@/lib/utils'
+import { parseActionError } from '@/lib/utils/error-messages'
+import { useMediaQuery } from '@/lib/hooks/use-media-query'
 import type {
   AppointmentWithRelations,
   Patient,
@@ -42,6 +44,16 @@ export function AgendaView({
   const [isPending, startTransition] = useTransition()
   const [openNewAppointment, setOpenNewAppointment] = useState(false)
   const [postConsultationApt, setPostConsultationApt] = useState<AppointmentWithRelations | null>(null)
+  const isMobile = useMediaQuery('(max-width: 768px)')
+  const [mobileDayIndex, setMobileDayIndex] = useState(() => {
+    // Default to today's index in the week, or 0
+    const today = new Date()
+    const monday = new Date(weekStart + 'T00:00:00')
+    for (let i = 0; i < 7; i++) {
+      if (isSameDay(addDays(monday, i), today)) return i
+    }
+    return 0
+  })
 
   const monday = new Date(weekStart + 'T00:00:00')
   const sunday = addDays(monday, 6)
@@ -91,9 +103,11 @@ export function AgendaView({
   const handleStatusUpdate = async (appointmentId: string, status: AppointmentStatus) => {
     try {
       await updateAppointmentStatus(appointmentId, status)
+      if (status === 'completed') toast.success('Turno marcado como realizado')
+      if (status === 'no_show') toast.success('Paciente registrado como ausente')
       router.refresh()
     } catch (error) {
-      console.error('Error updating status:', error)
+      toast.error(parseActionError(error))
     }
   }
 
@@ -106,63 +120,111 @@ export function AgendaView({
 
     try {
       await cancelAppointment(appointmentId)
+      toast.success('Turno cancelado')
       router.refresh()
     } catch (error) {
-      console.error('Error cancelling:', error)
+      toast.error(parseActionError(error))
     }
   }
 
   return (
     <div className="space-y-6 pb-24">
-      {/* SECCIÓN A — Week navigation */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-2">
+      {/* SECCIÓN A — Week navigation (desktop) / Day navigation (mobile) */}
+      {isMobile ? (
+        <div className="flex items-center justify-between">
           <Button
             variant="outline"
             size="icon"
-            onClick={() => navigateWeek('prev')}
+            onClick={() => {
+              if (mobileDayIndex === 0) {
+                navigateWeek('prev')
+                setMobileDayIndex(6)
+              } else {
+                setMobileDayIndex(mobileDayIndex - 1)
+              }
+            }}
             disabled={isPending}
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
+          <span className="text-base font-semibold capitalize">
+            {(() => {
+              const day = days[mobileDayIndex]
+              const label = format(day, "EEEE d 'de' MMMM", { locale: es })
+              return label.charAt(0).toUpperCase() + label.slice(1)
+            })()}
+          </span>
           <Button
             variant="outline"
             size="icon"
-            onClick={() => navigateWeek('next')}
+            onClick={() => {
+              if (mobileDayIndex === 6) {
+                navigateWeek('next')
+                setMobileDayIndex(0)
+              } else {
+                setMobileDayIndex(mobileDayIndex + 1)
+              }
+            }}
             disabled={isPending}
           >
             <ChevronRight className="h-4 w-4" />
           </Button>
-          <span className="text-lg font-semibold capitalize">
-            {formatWeekRange()}
-          </span>
         </div>
-        <Button variant="outline" onClick={goToToday} disabled={isPending}>
-          Hoy
-        </Button>
-      </div>
+      ) : (
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => navigateWeek('prev')}
+              disabled={isPending}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => navigateWeek('next')}
+              disabled={isPending}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+            <span className="text-lg font-semibold capitalize">
+              {formatWeekRange()}
+            </span>
+          </div>
+          <Button variant="outline" onClick={goToToday} disabled={isPending}>
+            Hoy
+          </Button>
+        </div>
+      )}
 
       {/* SECCIÓN B — Daily list view */}
-      <div className="space-y-6">
-        {days.map((day, dayIndex) => {
+      {appointments.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <CalendarPlus className="mb-4 h-12 w-12 text-muted-foreground" />
+          <h3 className="text-lg font-medium">Esta semana no tenés turnos</h3>
+          <p className="mt-1 text-sm text-muted-foreground">Empezá agregando tu primer turno del día</p>
+          <Button className="mt-4" onClick={() => setOpenNewAppointment(true)}>
+            Crear primer turno
+          </Button>
+        </div>
+      ) : isMobile ? (
+        // Mobile: single day view
+        (() => {
+          const day = days[mobileDayIndex]
           const dayAppointments = getAppointmentsForDay(day)
           const isToday = isSameDay(day, today)
-          const dayLabel = format(day, "EEEE d", { locale: es })
-          const capitalizedDay = dayLabel.charAt(0).toUpperCase() + dayLabel.slice(1)
 
           return (
-            <div key={dayIndex}>
-              <div className="mb-3 flex items-center gap-2">
-                <h3 className="text-base font-bold">{capitalizedDay}</h3>
-                {isToday && (
-                  <span className="rounded-full bg-primary px-2 py-0.5 text-xs font-medium text-primary-foreground">
-                    Hoy
-                  </span>
-                )}
-              </div>
-
+            <div>
+              {isToday && (
+                <span className="mb-3 inline-block rounded-full bg-primary px-2 py-0.5 text-xs font-medium text-primary-foreground">
+                  Hoy
+                </span>
+              )}
               {dayAppointments.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Sin turnos</p>
+                <p className="py-8 text-center text-sm text-muted-foreground">Sin turnos este día</p>
               ) : (
                 <div className="space-y-2">
                   {dayAppointments.map((apt) => (
@@ -176,12 +238,51 @@ export function AgendaView({
                   ))}
                 </div>
               )}
-
-              {dayIndex < 6 && <Separator className="mt-4" />}
             </div>
           )
-        })}
-      </div>
+        })()
+      ) : (
+        // Desktop: full week view
+        <div className="space-y-6">
+          {days.map((day, dayIndex) => {
+            const dayAppointments = getAppointmentsForDay(day)
+            const isToday = isSameDay(day, today)
+            const dayLabel = format(day, "EEEE d", { locale: es })
+            const capitalizedDay = dayLabel.charAt(0).toUpperCase() + dayLabel.slice(1)
+
+            return (
+              <div key={dayIndex}>
+                <div className="mb-3 flex items-center gap-2">
+                  <h3 className="text-base font-bold">{capitalizedDay}</h3>
+                  {isToday && (
+                    <span className="rounded-full bg-primary px-2 py-0.5 text-xs font-medium text-primary-foreground">
+                      Hoy
+                    </span>
+                  )}
+                </div>
+
+                {dayAppointments.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Sin turnos</p>
+                ) : (
+                  <div className="space-y-2">
+                    {dayAppointments.map((apt) => (
+                      <TurnoCard
+                        key={apt.id}
+                        appointment={apt}
+                        onStatusUpdate={handleStatusUpdate}
+                        onCancel={handleCancel}
+                        onPostConsultation={setPostConsultationApt}
+                      />
+                    ))}
+                  </div>
+                )}
+
+                {dayIndex < 6 && <Separator className="mt-4" />}
+              </div>
+            )
+          })}
+        </div>
+      )}
 
       {/* SECCIÓN C — Floating "Nuevo turno" button */}
       <Button

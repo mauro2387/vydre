@@ -20,6 +20,7 @@ import { AppointmentStatusBadge } from '@/components/app/appointment-status-badg
 import { EditPatientModal } from '@/components/app/edit-patient-modal'
 import { updatePatient } from '@/lib/actions/patients'
 import { generateSummary } from '@/lib/actions/consultation'
+import { parseActionError } from '@/lib/utils/error-messages'
 import type { PatientDetail, AppointmentStatus } from '@/lib/types/database.types'
 
 const getInitials = (name: string) =>
@@ -43,11 +44,12 @@ export function PatientDetailView({ patient }: { patient: PatientDetail }) {
         email: patient.email ?? undefined,
         notes: notes || undefined,
       })
+      toast.success('Notas guardadas')
       setSavedMessage(true)
       setTimeout(() => setSavedMessage(false), 2000)
       router.refresh()
     } catch {
-      // silently fail
+      toast.error('No se pudieron guardar las notas. Intentá de nuevo.')
     } finally {
       setSavingNotes(false)
     }
@@ -223,10 +225,10 @@ function ConsultationNotesCollapsible({
     try {
       setGenerating(true)
       await generateSummary(consultationNoteId)
+      toast.success('Resumen generado')
       router.refresh()
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Error al generar resumen'
-      toast.error(message)
+      toast.error(parseActionError(error))
     } finally {
       setGenerating(false)
     }

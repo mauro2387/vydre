@@ -58,7 +58,7 @@ export function SidebarNav({
   }
 
   return (
-    <aside className="flex w-[220px] flex-col border-r bg-muted/40">
+    <div className="flex h-full flex-col">
       <div className="p-6">
         <h1 className="text-xl font-bold">Vydre</h1>
       </div>
@@ -110,6 +110,6 @@ export function SidebarNav({
           Cerrar sesión
         </Button>
       </div>
-    </aside>
+    </div>
   )
 }

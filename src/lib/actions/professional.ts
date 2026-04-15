@@ -1,10 +1,11 @@
 'use server'
 
+import { cache } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 
-export async function getProfessional() {
+export const getProfessional = cache(async () => {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -17,7 +18,7 @@ export async function getProfessional() {
 
   if (error) return null
   return data
-}
+})
 
 export async function updateOnboarding(formData: {
   name: string

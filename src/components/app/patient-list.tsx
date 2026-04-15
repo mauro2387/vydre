@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Plus, Search } from 'lucide-react'
+import { Plus, Search, UserPlus } from 'lucide-react'
+import { toast } from 'sonner'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import {
@@ -17,6 +18,7 @@ import {
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { createPatient } from '@/lib/actions/patients'
+import { parseActionError } from '@/lib/utils/error-messages'
 import type { Patient } from '@/lib/types/database.types'
 
 const getInitials = (name: string) =>
@@ -86,11 +88,12 @@ export function PatientList({
         phone: data.phone,
         email: data.email || undefined,
       })
+      toast.success(`Paciente ${data.name} agregado`)
       reset()
       setOpenNewPatient(false)
       router.refresh()
     } catch (error) {
-      setServerError(error instanceof Error ? error.message : 'Error al crear paciente')
+      setServerError(parseActionError(error))
     } finally {
       setLoading(false)
     }
@@ -101,7 +104,7 @@ export function PatientList({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold">Pacientes</h1>
+          <h1 className="text-2xl font-semibold">Pacientes</h1>
           <p className="text-sm text-muted-foreground">{patients.length} pacientes</p>
         </div>
         <Button size="sm" onClick={() => setOpenNewPatient(true)}>
@@ -123,7 +126,16 @@ export function PatientList({
       </div>
 
       {/* Patient list */}
-      {patients.length === 0 ? (
+      {patients.length === 0 && !value ? (
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <UserPlus className="mb-4 h-12 w-12 text-muted-foreground" />
+          <h3 className="text-lg font-medium">Todavía no tenés pacientes</h3>
+          <p className="mt-1 text-sm text-muted-foreground">Agregá tu primer paciente para empezar</p>
+          <Button className="mt-4" size="sm" onClick={() => setOpenNewPatient(true)}>
+            Agregar paciente
+          </Button>
+        </div>
+      ) : patients.length === 0 ? (
         <p className="py-8 text-center text-sm text-muted-foreground">
           No encontramos pacientes con ese nombre
         </p>

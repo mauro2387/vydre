@@ -1,7 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { SidebarNav } from './sidebar-nav'
-import { Toaster } from 'sonner'
+import { DashboardShell } from './dashboard-shell'
 
 export default async function DashboardLayout({
   children,
@@ -27,15 +26,11 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="flex min-h-screen">
-      <SidebarNav
-        professionalName={professional.name}
-        professionalSpecialty={professional.specialty}
-      />
-      <main className="flex-1 p-8">
-        {children}
-      </main>
-      <Toaster richColors position="bottom-right" />
-    </div>
+    <DashboardShell
+      professionalName={professional.name}
+      professionalSpecialty={professional.specialty}
+    >
+      {children}
+    </DashboardShell>
   )
 }

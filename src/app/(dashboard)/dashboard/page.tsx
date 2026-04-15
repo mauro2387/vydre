@@ -1,4 +1,4 @@
-import { CalendarDays, CalendarX, CheckCircle, Clock, AlertTriangle, Calendar, Send } from 'lucide-react'
+import { CalendarDays, CalendarX, CheckCircle, Clock, AlertTriangle, Calendar, Send, Activity } from 'lucide-react'
 import { format, formatDistanceToNow } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { getTodayAppointments, getUpcomingUnconfirmed, getRecentActivity } from '@/lib/actions/appointments'
@@ -32,7 +32,7 @@ export default async function DashboardPage() {
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold">
+        <h1 className="text-2xl font-semibold">
           {greeting}, {professional?.name?.split(' ')[0]}
         </h1>
         <p className="text-muted-foreground">{todayFormatted}</p>
@@ -145,9 +145,6 @@ export default async function DashboardPage() {
               })}
             </CardContent>
           </Card>
-          <p className="mt-2 text-xs text-muted-foreground">
-            Los recordatorios automáticos se configuran en Sprint 3
-          </p>
         </div>
       )}
 
@@ -156,8 +153,9 @@ export default async function DashboardPage() {
         <h2 className="mb-4 text-lg font-semibold">Actividad reciente</h2>
         {recentActivity.length === 0 ? (
           <Card>
-            <CardContent className="py-8 text-center">
-              <p className="text-muted-foreground">Sin actividad reciente</p>
+            <CardContent className="flex flex-col items-center justify-center py-8 text-center">
+              <Activity className="mb-3 h-8 w-8 text-muted-foreground/50" />
+              <p className="text-sm text-muted-foreground">Sin actividad en las últimas 24 horas</p>
             </CardContent>
           </Card>
         ) : (

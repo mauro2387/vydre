@@ -22,6 +22,7 @@ import {
   updateSummary,
   sendSummary,
 } from '@/lib/actions/consultation'
+import { parseActionError } from '@/lib/utils/error-messages'
 import type { AppointmentWithRelations, GeneratedSummary } from '@/lib/types/database.types'
 
 type NotesForm = {
@@ -66,18 +67,18 @@ export function PostConsultationModal({
         treatment: data.treatment,
         observations: data.observations,
       })
-      setSavingNotes(false)
+      toast.success('Notas guardadas')
 
       setGeneratingAI(true)
       const generatedSummary = await generateSummary(notes.id)
       setSummary(generatedSummary)
       setGeneratingAI(false)
+      toast.success('Resumen generado')
       setVista('summary')
     } catch (error) {
       setSavingNotes(false)
       setGeneratingAI(false)
-      const message = error instanceof Error ? error.message : 'Error inesperado'
-      toast.error(message)
+      toast.error(parseActionError(error))
     }
   }
 
@@ -91,8 +92,7 @@ export function PostConsultationModal({
       setGeneratingAI(false)
     } catch (error) {
       setGeneratingAI(false)
-      const message = error instanceof Error ? error.message : 'Error al regenerar'
-      toast.error(message)
+      toast.error(parseActionError(error))
     }
   }
 
@@ -106,12 +106,11 @@ export function PostConsultationModal({
     try {
       setSending(true)
       await sendSummary(summary.id)
-      toast.success(`Resumen enviado a ${patientName}`)
+      toast.success(`Resumen enviado a ${patientEmail}`)
       onClose()
     } catch (error) {
       setSending(false)
-      const message = error instanceof Error ? error.message : 'Error al enviar'
-      toast.error(message)
+      toast.error(parseActionError(error))
     }
   }
 
