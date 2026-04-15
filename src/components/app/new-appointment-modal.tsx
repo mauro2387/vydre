@@ -78,11 +78,13 @@ export function NewAppointmentModal({
   onOpenChange,
   patients,
   professional,
+  onSuccess,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   patients: Patient[]
   professional: Professional
+  onSuccess?: () => void
 }) {
   const router = useRouter()
   const [serverError, setServerError] = useState<string | null>(null)
@@ -172,6 +174,7 @@ export function NewAppointmentModal({
       toast.success(`Turno creado para ${selectedPatient?.name ?? 'el paciente'}`)
       reset()
       onOpenChange(false)
+      onSuccess?.()
       router.refresh()
     } catch (error) {
       setServerError(parseActionError(error))

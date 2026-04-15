@@ -14,6 +14,10 @@ export type Database = {
           schedule: Json
           appointment_duration: number
           onboarding_complete: boolean
+          first_patient_created: boolean
+          first_appointment_created: boolean
+          first_reminder_sent: boolean
+          activation_complete: boolean
           created_at: string
           updated_at: string
         }
@@ -27,6 +31,10 @@ export type Database = {
           schedule?: Json
           appointment_duration?: number
           onboarding_complete?: boolean
+          first_patient_created?: boolean
+          first_appointment_created?: boolean
+          first_reminder_sent?: boolean
+          activation_complete?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -40,6 +48,10 @@ export type Database = {
           schedule?: Json
           appointment_duration?: number
           onboarding_complete?: boolean
+          first_patient_created?: boolean
+          first_appointment_created?: boolean
+          first_reminder_sent?: boolean
+          activation_complete?: boolean
           created_at?: string
           updated_at?: string
         }

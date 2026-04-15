@@ -142,6 +142,16 @@ export async function createAppointment(data: {
     throw new Error(error.message)
   }
 
+  // Track activation
+  await supabase
+    .from('professionals')
+    .update({ first_appointment_created: true })
+    .eq('id', professional.id)
+    .eq('first_appointment_created', false)
+
+  const { checkActivationComplete } = await import('./professional')
+  await checkActivationComplete()
+
   revalidatePath('/agenda')
   revalidatePath('/dashboard')
 }

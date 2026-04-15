@@ -6,7 +6,8 @@ import { getProfessional } from '@/lib/actions/professional'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { AppointmentStatusBadge } from '@/components/app/appointment-status-badge'
-import type { AppointmentStatus } from '@/lib/types/database.types'
+import { ActivationBanner } from '@/components/app/activation-banner'
+import type { AppointmentStatus, Professional } from '@/lib/types/database.types'
 
 export default async function DashboardPage() {
   const [todayAppointments, unconfirmed, professional, recentActivity] = await Promise.all([
@@ -37,6 +38,11 @@ export default async function DashboardPage() {
         </h1>
         <p className="text-muted-foreground">{todayFormatted}</p>
       </div>
+
+      {/* Activation banner for new users */}
+      {professional && !professional.activation_complete && (
+        <ActivationBanner professional={professional as Professional} />
+      )}
 
       {/* Metrics */}
       <div className="grid gap-4 sm:grid-cols-3">

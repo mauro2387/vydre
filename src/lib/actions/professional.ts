@@ -46,7 +46,7 @@ export async function updateOnboarding(formData: {
   if (error) throw new Error(error.message)
 
   revalidatePath('/dashboard')
-  redirect('/dashboard')
+  redirect('/bienvenida')
 }
 
 export async function updateProfile(data: {
@@ -117,4 +117,29 @@ export async function updateTimezone(timezone: string) {
   if (error) throw new Error(`Error al actualizar zona horaria: ${error.message}`)
 
   revalidatePath('/configuracion')
+}
+
+export async function checkActivationComplete() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return
+
+  const { data: professional } = await supabase
+    .from('professionals')
+    .select('first_patient_created, first_appointment_created, first_reminder_sent, activation_complete')
+    .eq('user_id', user.id)
+    .single()
+
+  if (!professional || professional.activation_complete) return
+
+  if (
+    professional.first_patient_created &&
+    professional.first_appointment_created &&
+    professional.first_reminder_sent
+  ) {
+    await supabase
+      .from('professionals')
+      .update({ activation_complete: true })
+      .eq('user_id', user.id)
+  }
 }

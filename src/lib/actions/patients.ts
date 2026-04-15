@@ -3,7 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
-import { getProfessional } from './professional'
+import { getProfessional, checkActivationComplete } from './professional'
 import type { Patient, PatientDetail } from '@/lib/types/database.types'
 
 export async function getPatients(search?: string): Promise<Patient[]> {
@@ -99,8 +99,18 @@ export async function createPatient(formData: {
 
   if (error) throw new Error(error.message)
 
+  // Track activation
+  await supabase
+    .from('professionals')
+    .update({ first_patient_created: true })
+    .eq('id', professional.id)
+    .eq('first_patient_created', false)
+
+  await checkActivationComplete()
+
   revalidatePath('/pacientes')
   revalidatePath('/agenda')
+  revalidatePath('/bienvenida')
 }
 
 export async function updatePatient(

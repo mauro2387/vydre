@@ -4,12 +4,12 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Loader2 } from 'lucide-react'
+import { Check, Info, Loader2 } from 'lucide-react'
 import { updateOnboarding } from '@/lib/actions/professional'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import {
   Select,
   SelectContent,
@@ -17,6 +17,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { ScheduleEditor, defaultSchedule } from '@/components/app/schedule-editor'
 import type { ScheduleValue } from '@/components/app/schedule-editor'
 
@@ -99,34 +105,43 @@ export function OnboardingForm({ initialName }: { initialName: string }) {
   const durationValue = watch('appointment_duration')
 
   return (
-    <>
+    <TooltipProvider>
+      {/* Logo */}
+      <div className="mb-6 text-center">
+        <h2 className="text-2xl font-bold tracking-tight">Vydre</h2>
+      </div>
+
       {/* Step indicator */}
-      <div className="mb-8 flex items-center justify-center gap-2">
+      <div className="mb-8 flex items-center justify-center gap-0">
         <div
-          className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium ${
-            step >= 1 ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+          className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold transition-colors ${
+            step === 1
+              ? 'border-2 border-black bg-black text-white'
+              : 'border-2 border-green-600 bg-green-600 text-white'
           }`}
         >
-          1
+          {step > 1 ? <Check className="h-4 w-4" /> : '1'}
         </div>
-        <div className={`h-0.5 w-12 ${step >= 2 ? 'bg-primary' : 'bg-muted'}`} />
+        <div className={`h-0.5 w-12 transition-colors ${step >= 2 ? 'bg-green-600' : 'bg-gray-300'}`} />
         <div
-          className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium ${
-            step >= 2 ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+          className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold transition-colors ${
+            step >= 2
+              ? 'border-2 border-black bg-black text-white'
+              : 'border-2 border-gray-300 bg-white text-gray-400'
           }`}
         >
           2
         </div>
       </div>
-      <p className="mb-6 text-center text-sm text-muted-foreground">
-        Paso {step} de 2
-      </p>
 
       <Card>
         {step === 1 && (
           <>
             <CardHeader>
-              <CardTitle>Completá tu perfil</CardTitle>
+              <CardTitle>Contanos sobre vos</CardTitle>
+              <CardDescription>
+                Esta información aparece en los emails que reciben tus pacientes
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
@@ -157,6 +172,9 @@ export function OnboardingForm({ initialName }: { initialName: string }) {
                 {errors.specialty && (
                   <p className="text-sm text-destructive">{errors.specialty.message}</p>
                 )}
+                <p className="text-xs text-muted-foreground">
+                  ¿No encontrás tu especialidad? Elegí &quot;Otra&quot; por ahora, la podés cambiar después.
+                </p>
               </div>
 
               <div className="space-y-2">
@@ -172,7 +190,17 @@ export function OnboardingForm({ initialName }: { initialName: string }) {
               </div>
 
               <div className="space-y-2">
-                <Label>Duración de turno</Label>
+                <div className="flex items-center gap-1.5">
+                  <Label>Duración de turno</Label>
+                  <Tooltip>
+                    <TooltipTrigger className="inline-flex">
+                      <Info className="h-3.5 w-3.5 text-muted-foreground" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      La duración determina los intervalos de tu agenda. Podés cambiarlo después en Configuración.
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
                 <Select
                   value={String(durationValue)}
                   onValueChange={(val) => {
@@ -202,10 +230,17 @@ export function OnboardingForm({ initialName }: { initialName: string }) {
         {step === 2 && (
           <form onSubmit={handleSubmit(onSubmit)}>
             <CardHeader>
-              <CardTitle>¿Qué días y horarios atendés?</CardTitle>
+              <CardTitle>¿Cuándo atendés?</CardTitle>
+              <CardDescription>
+                Configurá tu horario habitual. Lo podés ajustar en cualquier momento.
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               <ScheduleEditor value={schedule} onChange={setSchedule} />
+
+              <p className="text-xs text-muted-foreground">
+                Solo se van a ofrecer turnos en los horarios que configures aquí.
+              </p>
 
               {error && (
                 <p className="text-sm text-destructive">{error}</p>
@@ -227,7 +262,7 @@ export function OnboardingForm({ initialName }: { initialName: string }) {
                       Guardando...
                     </>
                   ) : (
-                    'Empezar a usar Vydre'
+                    'Listo, quiero ver mi consultorio →'
                   )}
                 </Button>
               </div>
@@ -235,6 +270,6 @@ export function OnboardingForm({ initialName }: { initialName: string }) {
           </form>
         )}
       </Card>
-    </>
+    </TooltipProvider>
   )
 }

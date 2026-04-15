@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     const { data: apt, error } = await supabase
       .from('appointments')
       .select(`
-        id, start_at,
+        id, start_at, professional_id,
         patients (name, email),
         professionals (name, specialty),
         appointment_confirmations (token, reminder_sent_at)
@@ -87,6 +87,33 @@ export async function POST(request: NextRequest) {
       .from('appointment_confirmations')
       .update({ reminder_sent_at: new Date().toISOString() })
       .eq('appointment_id', apt.id)
+
+    // Track activation
+    await supabase
+      .from('professionals')
+      .update({ first_reminder_sent: true })
+      .eq('id', apt.professional_id)
+      .eq('first_reminder_sent', false)
+
+    // Check if activation is complete
+    const { data: prof } = await supabase
+      .from('professionals')
+      .select('first_patient_created, first_appointment_created, first_reminder_sent, activation_complete')
+      .eq('id', apt.professional_id)
+      .single()
+
+    if (
+      prof &&
+      !prof.activation_complete &&
+      prof.first_patient_created &&
+      prof.first_appointment_created &&
+      prof.first_reminder_sent
+    ) {
+      await supabase
+        .from('professionals')
+        .update({ activation_complete: true })
+        .eq('id', apt.professional_id)
+    }
 
     return NextResponse.json({ success: true })
   } catch (err) {
