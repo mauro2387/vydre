@@ -283,3 +283,13 @@ export type AppointmentWithRelations = Appointment & {
     'response' | 'responded_at'
   > | null
 }
+
+// Patient con detalle completo
+export type PatientDetail = Patient & {
+  appointments: (Appointment & {
+    appointment_confirmations: Pick<AppointmentConfirmation, 'response'> | null
+    consultation_notes: (ConsultationNote & {
+      generated_summaries: GeneratedSummary | null
+    }) | null
+  })[]
+}
