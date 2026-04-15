@@ -4,7 +4,8 @@ import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
 import { format, addDays, isSameDay } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { ChevronLeft, ChevronRight, Plus, MoreVertical } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Plus, MoreVertical, Bell } from 'lucide-react'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
@@ -218,7 +219,28 @@ function TurnoCard({
   const showCompleted = status !== 'completed' && status !== 'no_show'
   const showNoShow = status !== 'completed' && status !== 'no_show'
   const showCancel = status !== 'cancelled'
-  const hasActions = showCompleted || showNoShow || showCancel
+  const showReminder = status === 'scheduled' &&
+    !!appointment.patients?.email &&
+    !appointment.appointment_confirmations?.responded_at
+  const hasActions = showCompleted || showNoShow || showCancel || showReminder
+
+  const handleSendReminder = async () => {
+    try {
+      const res = await fetch('/api/reminders/send-one', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ appointmentId: appointment.id }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        toast.error(data.error ?? 'Error al enviar el recordatorio')
+        return
+      }
+      toast.success(`Recordatorio enviado a ${patientName}`)
+    } catch {
+      toast.error('Error al enviar el recordatorio')
+    }
+  }
 
   return (
     <Card className="transition-colors hover:bg-muted/50">
@@ -236,6 +258,12 @@ function TurnoCard({
               <MoreVertical className="h-4 w-4" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              {showReminder && (
+                <DropdownMenuItem onClick={handleSendReminder}>
+                  <Bell className="mr-2 h-4 w-4" />
+                  Enviar recordatorio
+                </DropdownMenuItem>
+              )}
               {showCompleted && (
                 <DropdownMenuItem onClick={() => onStatusUpdate(appointment.id, 'completed')}>
                   Marcar como realizado
