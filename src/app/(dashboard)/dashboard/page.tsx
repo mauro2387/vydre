@@ -18,7 +18,8 @@ export default async function DashboardPage() {
   const now = new Date()
   const hour = now.getHours()
   const greeting = hour < 12 ? 'Buenos días' : 'Buenas tardes'
-  const todayFormatted = format(now, "EEEE, d 'de' MMMM 'de' yyyy", { locale: es })
+  const fechaHoy = format(now, "EEEE, d 'de' MMMM 'de' yyyy", { locale: es })
+  const todayFormatted = fechaHoy.charAt(0).toUpperCase() + fechaHoy.slice(1)
 
   const totalToday = todayAppointments.length
   const confirmedCount = todayAppointments.filter((apt) => {
@@ -33,7 +34,7 @@ export default async function DashboardPage() {
         <h1 className="text-2xl font-bold">
           {greeting}, {professional?.name?.split(' ')[0]}
         </h1>
-        <p className="text-muted-foreground capitalize">{todayFormatted}</p>
+        <p className="text-muted-foreground">{todayFormatted}</p>
       </div>
 
       {/* Metrics */}

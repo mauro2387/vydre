@@ -32,15 +32,15 @@ export async function updateOnboarding(formData: {
 
   const { error } = await supabase
     .from('professionals')
-    .update({
+    .upsert({
+      user_id: user.id,
       name: formData.name,
       specialty: formData.specialty,
       phone: formData.phone,
       appointment_duration: formData.appointment_duration,
       schedule: formData.schedule,
       onboarding_complete: true,
-    })
-    .eq('user_id', user.id)
+    }, { onConflict: 'user_id' })
 
   if (error) throw new Error(error.message)
 
