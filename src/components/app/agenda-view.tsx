@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { AppointmentStatusBadge } from '@/components/app/appointment-status-badge'
 import { NewAppointmentModal } from '@/components/app/new-appointment-modal'
-import { PostConsultationModal } from '@/components/app/post-consultation-modal'
+import { ClinicalEntryModal } from '@/components/app/clinical-entry-modal'
 import { updateAppointmentStatus, cancelAppointment } from '@/lib/actions/appointments'
 import { isAppointmentPast } from '@/lib/utils'
 import { parseActionError } from '@/lib/utils/error-messages'
@@ -302,9 +302,9 @@ export function AgendaView({
         professional={professional}
       />
 
-      {/* Post consultation modal */}
+      {/* Clinical entry modal */}
       {postConsultationApt && (
-        <PostConsultationModal
+        <ClinicalEntryModal
           appointment={postConsultationApt}
           open={!!postConsultationApt}
           onClose={() => {

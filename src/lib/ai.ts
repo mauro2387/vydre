@@ -43,15 +43,19 @@ export async function generateConsultationSummary(params: {
   treatment: string | null
   observations: string | null
   patientName: string
+  diagnosis?: string | null
+  indications?: string | null
 }): Promise<string> {
-  const { specialty, reason, treatment, observations, patientName } = params
+  const { specialty, reason, treatment, observations, patientName, diagnosis, indications } = params
 
   const userContent = `
 Generá un resumen para el paciente ${patientName} sobre su consulta de hoy.
 
 Información de la consulta:
 ${reason ? `- Motivo de consulta: ${reason}` : ''}
+${diagnosis ? `- Diagnóstico: ${diagnosis}` : ''}
 ${treatment ? `- Tratamiento / procedimiento realizado: ${treatment}` : ''}
+${indications ? `- Indicaciones: ${indications}` : ''}
 ${observations ? `- Observaciones del profesional: ${observations}` : ''}
 
 El resumen debe:

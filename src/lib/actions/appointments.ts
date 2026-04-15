@@ -25,7 +25,8 @@ export async function getTodayAppointments(): Promise<AppointmentWithRelations[]
     .select(`
       *,
       patients (id, name, phone, email),
-      appointment_confirmations (response, responded_at)
+      appointment_confirmations (response, responded_at),
+      clinical_entries (id)
     `)
     .eq('professional_id', professional.id)
     .gte('start_at', startOfDay.toISOString())
@@ -97,7 +98,8 @@ export async function getWeekAppointments(weekStart: string): Promise<Appointmen
     .select(`
       *,
       patients (id, name, phone, email),
-      appointment_confirmations (response, responded_at)
+      appointment_confirmations (response, responded_at),
+      clinical_entries (id)
     `)
     .eq('professional_id', professional.id)
     .gte('start_at', start.toISOString())

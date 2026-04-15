@@ -1,4 +1,5 @@
 import { getPatients, getPatientDetail } from '@/lib/actions/patients'
+import { getPatientClinicalRecord } from '@/lib/actions/clinical'
 import { PatientList } from '@/components/app/patient-list'
 import { PatientDetailView } from '@/components/app/patient-detail'
 import { PacientesMobileWrapper } from '@/components/app/pacientes-mobile-wrapper'
@@ -13,9 +14,10 @@ export default async function PacientesPage({
   const q = params.q
   const selectedId = params.id
 
-  const [patients, patientDetail] = await Promise.all([
+  const [patients, patientDetail, clinicalRecord] = await Promise.all([
     getPatients(q),
     selectedId ? getPatientDetail(selectedId) : Promise.resolve(null),
+    selectedId ? getPatientClinicalRecord(selectedId) : Promise.resolve(null),
   ])
 
   return (
@@ -30,7 +32,11 @@ export default async function PacientesPage({
       }
       detailSlot={
         patientDetail ? (
-          <PatientDetailView patient={patientDetail} />
+          <PatientDetailView
+            patient={patientDetail}
+            clinicalEntries={clinicalRecord?.entries ?? []}
+            medications={clinicalRecord?.medications ?? []}
+          />
         ) : (
           <div className="flex h-full flex-col items-center justify-center text-center">
             <Users className="mb-4 h-16 w-16 text-muted-foreground/30" />

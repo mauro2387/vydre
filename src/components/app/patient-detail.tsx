@@ -4,29 +4,29 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { Phone, Mail, Calendar, ChevronDown, ChevronUp, Pencil, Sparkles, Loader2 } from 'lucide-react'
+import { Phone, Mail, Calendar, Pencil } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { Textarea } from '@/components/ui/textarea'
-import {
-  Collapsible,
-  CollapsibleTrigger,
-  CollapsibleContent,
-} from '@/components/ui/collapsible'
-import { AppointmentStatusBadge } from '@/components/app/appointment-status-badge'
 import { EditPatientModal } from '@/components/app/edit-patient-modal'
+import { PatientClinicalRecord } from '@/components/app/patient-clinical-record'
 import { updatePatient } from '@/lib/actions/patients'
-import { generateSummary } from '@/lib/actions/consultation'
-import { parseActionError } from '@/lib/utils/error-messages'
-import type { PatientDetail, AppointmentStatus } from '@/lib/types/database.types'
+import type { PatientDetail, ClinicalEntry, PatientMedication } from '@/lib/types/database.types'
 
 const getInitials = (name: string) =>
   name.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase()
 
-export function PatientDetailView({ patient }: { patient: PatientDetail }) {
+export function PatientDetailView({
+  patient,
+  clinicalEntries,
+  medications,
+}: {
+  patient: PatientDetail
+  clinicalEntries: (ClinicalEntry & { appointments: { start_at: string; status: string } | null })[]
+  medications: PatientMedication[]
+}) {
   const router = useRouter()
   const [editOpen, setEditOpen] = useState(false)
   const [notes, setNotes] = useState(patient.notes ?? '')
@@ -108,61 +108,12 @@ export function PatientDetailView({ patient }: { patient: PatientDetail }) {
         </CardContent>
       </Card>
 
-      {/* SECCIÓN C — Appointment history */}
-      <div>
-        <div className="mb-3 flex items-center gap-2">
-          <h3 className="text-base font-semibold">Historial de turnos</h3>
-          <Badge variant="secondary">{patient.appointments?.length ?? 0}</Badge>
-        </div>
-
-        {(!patient.appointments || patient.appointments.length === 0) ? (
-          <p className="py-4 text-sm text-muted-foreground">
-            Este paciente no tiene turnos registrados aún.{' '}
-            <a href="/agenda" className="font-medium text-blue-600 hover:underline">Crear turno</a>
-          </p>
-        ) : (
-          <div className="space-y-2">
-            {patient.appointments.map((apt) => {
-              const dateStr = format(new Date(apt.start_at), "EEE d MMM · HH:mm", { locale: es })
-              const capitalizedDate = dateStr.charAt(0).toUpperCase() + dateStr.slice(1)
-              const status = apt.status as AppointmentStatus
-              const confirmation = (apt.appointment_confirmations?.response as 'confirmed' | 'declined' | null) ?? null
-              const hasNotes = apt.consultation_notes &&
-                (apt.consultation_notes.reason || apt.consultation_notes.treatment || apt.consultation_notes.observations)
-              const summary = apt.consultation_notes?.generated_summaries
-
-              return (
-                <Card key={apt.id}>
-                  <CardContent className="py-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">{capitalizedDate}</span>
-                      <AppointmentStatusBadge status={status} confirmation={confirmation} />
-                    </div>
-
-                    {hasNotes ? (
-                      <ConsultationNotesCollapsible
-                        consultationNoteId={apt.consultation_notes!.id}
-                        reason={apt.consultation_notes!.reason}
-                        treatment={apt.consultation_notes!.treatment}
-                        observations={apt.consultation_notes!.observations}
-                        summarySentAt={summary?.sent_at ?? null}
-                        summaryContent={summary?.edited_content ?? summary?.content ?? null}
-                        hasSummary={!!summary}
-                      />
-                    ) : (
-                      status === 'completed' && (
-                        <p className="mt-2 text-sm italic text-muted-foreground">
-                          Sin notas registradas
-                        </p>
-                      )
-                    )}
-                  </CardContent>
-                </Card>
-              )
-            })}
-          </div>
-        )}
-      </div>
+      {/* SECCIÓN C — Clinical record tabs */}
+      <PatientClinicalRecord
+        patient={patient}
+        entries={clinicalEntries}
+        medications={medications}
+      />
 
       <Separator />
 
@@ -196,107 +147,5 @@ export function PatientDetailView({ patient }: { patient: PatientDetail }) {
         onClose={() => setEditOpen(false)}
       />
     </div>
-  )
-}
-
-// Collapsible subcomponent for consultation notes
-function ConsultationNotesCollapsible({
-  consultationNoteId,
-  reason,
-  treatment,
-  observations,
-  summarySentAt,
-  summaryContent,
-  hasSummary,
-}: {
-  consultationNoteId: string
-  reason: string | null
-  treatment: string | null
-  observations: string | null
-  summarySentAt: string | null
-  summaryContent: string | null
-  hasSummary: boolean
-}) {
-  const router = useRouter()
-  const [open, setOpen] = useState(false)
-  const [generating, setGenerating] = useState(false)
-  const [showSummary, setShowSummary] = useState(false)
-
-  const handleGenerateSummary = async () => {
-    try {
-      setGenerating(true)
-      await generateSummary(consultationNoteId)
-      toast.success('Resumen generado')
-      router.refresh()
-    } catch (error) {
-      toast.error(parseActionError(error))
-    } finally {
-      setGenerating(false)
-    }
-  }
-
-  return (
-    <Collapsible open={open} onOpenChange={setOpen}>
-      <CollapsibleTrigger className="mt-2 flex items-center gap-1 text-xs text-primary hover:underline">
-        {open ? (
-          <>Ocultar notas <ChevronUp className="h-3 w-3" /></>
-        ) : (
-          <>Ver notas de consulta <ChevronDown className="h-3 w-3" /></>
-        )}
-      </CollapsibleTrigger>
-      <CollapsibleContent>
-        <div className="mt-2 space-y-1.5 rounded-md bg-muted/50 p-3 text-sm">
-          {reason && <p><span className="font-medium">Motivo:</span> {reason}</p>}
-          {treatment && <p><span className="font-medium">Tratamiento:</span> {treatment}</p>}
-          {observations && <p><span className="font-medium">Observaciones:</span> {observations}</p>}
-          {hasSummary && (
-            <div className="mt-2 space-y-2">
-              {summarySentAt ? (
-                <Badge variant="secondary" className="bg-green-100 text-green-700 hover:bg-green-100">
-                  Resumen enviado
-                </Badge>
-              ) : (
-                <Badge variant="secondary" className="bg-blue-100 text-blue-700 hover:bg-blue-100">
-                  Resumen generado
-                </Badge>
-              )}
-              <button
-                type="button"
-                className="block text-xs text-primary hover:underline"
-                onClick={() => setShowSummary(!showSummary)}
-              >
-                {showSummary ? 'Ocultar resumen' : 'Ver resumen'}
-              </button>
-              {showSummary && summaryContent && (
-                <p className="whitespace-pre-wrap rounded-md bg-blue-50 p-3 text-sm">{summaryContent}</p>
-              )}
-            </div>
-          )}
-          {!hasSummary && (
-            <div className="mt-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleGenerateSummary}
-                disabled={generating}
-                className="h-7 text-xs"
-              >
-                {generating ? (
-                  <>
-                    <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                    Generando...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="mr-1 h-3 w-3" />
-                    Generar resumen
-                  </>
-                )}
-              </Button>
-            </div>
-          )}
-        </div>
-      </CollapsibleContent>
-    </Collapsible>
   )
 }

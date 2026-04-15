@@ -66,6 +66,16 @@ export type Database = {
           email: string | null
           dob: string | null
           notes: string | null
+          blood_type: string | null
+          allergies: string[] | null
+          chronic_conditions: string[] | null
+          current_medications: string[] | null
+          emergency_contact_name: string | null
+          emergency_contact_phone: string | null
+          insurance_provider: string | null
+          insurance_number: string | null
+          occupation: string | null
+          clinical_notes: string | null
           created_at: string
           updated_at: string
         }
@@ -77,6 +87,16 @@ export type Database = {
           email?: string | null
           dob?: string | null
           notes?: string | null
+          blood_type?: string | null
+          allergies?: string[] | null
+          chronic_conditions?: string[] | null
+          current_medications?: string[] | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          insurance_provider?: string | null
+          insurance_number?: string | null
+          occupation?: string | null
+          clinical_notes?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -88,6 +108,16 @@ export type Database = {
           email?: string | null
           dob?: string | null
           notes?: string | null
+          blood_type?: string | null
+          allergies?: string[] | null
+          chronic_conditions?: string[] | null
+          current_medications?: string[] | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          insurance_provider?: string | null
+          insurance_number?: string | null
+          occupation?: string | null
+          clinical_notes?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -330,6 +360,111 @@ export type Database = {
         }
         Relationships: []
       }
+      clinical_entries: {
+        Row: {
+          id: string
+          appointment_id: string | null
+          patient_id: string
+          professional_id: string
+          chief_complaint: string | null
+          clinical_history: string | null
+          physical_exam: string | null
+          diagnosis: string | null
+          treatment_plan: string | null
+          medications: Json
+          indications: string | null
+          next_steps: string | null
+          template_type: string
+          specialty_data: Json
+          ai_summary: string | null
+          ai_summary_sent_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          appointment_id?: string | null
+          patient_id: string
+          professional_id: string
+          chief_complaint?: string | null
+          clinical_history?: string | null
+          physical_exam?: string | null
+          diagnosis?: string | null
+          treatment_plan?: string | null
+          medications?: Json
+          indications?: string | null
+          next_steps?: string | null
+          template_type?: string
+          specialty_data?: Json
+          ai_summary?: string | null
+          ai_summary_sent_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          appointment_id?: string | null
+          patient_id?: string
+          professional_id?: string
+          chief_complaint?: string | null
+          clinical_history?: string | null
+          physical_exam?: string | null
+          diagnosis?: string | null
+          treatment_plan?: string | null
+          medications?: Json
+          indications?: string | null
+          next_steps?: string | null
+          template_type?: string
+          specialty_data?: Json
+          ai_summary?: string | null
+          ai_summary_sent_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      patient_medications: {
+        Row: {
+          id: string
+          patient_id: string
+          professional_id: string
+          name: string
+          dose: string | null
+          frequency: string | null
+          start_date: string | null
+          end_date: string | null
+          active: boolean
+          notes: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          patient_id: string
+          professional_id: string
+          name: string
+          dose?: string | null
+          frequency?: string | null
+          start_date?: string | null
+          end_date?: string | null
+          active?: boolean
+          notes?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          patient_id?: string
+          professional_id?: string
+          name?: string
+          dose?: string | null
+          frequency?: string | null
+          start_date?: string | null
+          end_date?: string | null
+          active?: boolean
+          notes?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -359,6 +494,16 @@ export type GeneratedSummary = Database['public']['Tables']['generated_summaries
 export type Message = Database['public']['Tables']['messages']['Row']
 export type WaitlistEntry = Database['public']['Tables']['waitlist']['Row']
 export type Notification = Database['public']['Tables']['notifications']['Row']
+export type ClinicalEntry = Database['public']['Tables']['clinical_entries']['Row']
+export type PatientMedication = Database['public']['Tables']['patient_medications']['Row']
+
+// Medication entry in clinical_entries jsonb
+export type MedicationEntry = {
+  name: string
+  dose: string
+  frequency: string
+  notes?: string
+}
 
 // Status types
 export type AppointmentStatus = 'scheduled' | 'confirmed' | 'cancelled' | 'completed' | 'no_show'
@@ -374,6 +519,7 @@ export type AppointmentWithRelations = Appointment & {
     AppointmentConfirmation,
     'response' | 'responded_at'
   > | null
+  clinical_entries: Pick<ClinicalEntry, 'id'>[] | null
 }
 
 // Patient con detalle completo
