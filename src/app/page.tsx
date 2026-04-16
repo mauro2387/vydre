@@ -7,7 +7,7 @@ import {
   Shield,
 } from 'lucide-react'
 
-const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
 
 async function getSpots() {
   try {
