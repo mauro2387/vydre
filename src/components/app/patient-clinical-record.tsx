@@ -171,7 +171,7 @@ function TabFicha({ patient }: { patient: Patient }) {
   const router = useRouter()
   const [saving, setSaving] = useState(false)
 
-  const [bloodType, setBloodType] = useState(patient.blood_type ?? '')
+  const [bloodType, setBloodType] = useState(patient.blood_type ?? undefined)
   const [allergies, setAllergies] = useState<string[]>(patient.allergies ?? [])
   const [conditions, setConditions] = useState<string[]>(patient.chronic_conditions ?? [])
   const [currentMeds, setCurrentMeds] = useState<string[]>(patient.current_medications ?? [])
@@ -212,7 +212,7 @@ function TabFicha({ patient }: { patient: Patient }) {
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
           <Label>Grupo sanguíneo</Label>
-          <Select value={bloodType} onValueChange={(val) => setBloodType(val ?? '')}>
+          <Select value={bloodType} onValueChange={(val) => setBloodType(val ?? undefined)}>
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Seleccionar" />
             </SelectTrigger>
