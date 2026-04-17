@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { sendReminderEmail } from '@/lib/email'
-import { format } from 'date-fns'
-import { es } from 'date-fns/locale'
+import { todayInTimezone, dayBoundsUTC, formatInTimezone } from '@/lib/utils'
 
 function getServiceClient() {
   return createClient(
@@ -22,12 +21,13 @@ export async function POST(request: NextRequest) {
 
     const supabase = getServiceClient()
 
-    const tomorrow = new Date()
-    tomorrow.setDate(tomorrow.getDate() + 1)
-    tomorrow.setHours(0, 0, 0, 0)
-
-    const dayAfter = new Date(tomorrow)
-    dayAfter.setHours(23, 59, 59, 999)
+    // Use Argentina/Uruguay timezone for date boundaries
+    const DEFAULT_TZ = 'America/Argentina/Buenos_Aires'
+    const todayStr = todayInTimezone(DEFAULT_TZ)
+    const tomorrowDate = new Date(todayStr + 'T12:00:00')
+    tomorrowDate.setDate(tomorrowDate.getDate() + 1)
+    const tomorrowStr = tomorrowDate.toISOString().split('T')[0]
+    const { startUTC: tomorrowStart, endUTC: tomorrowEnd } = dayBoundsUTC(tomorrowStr, DEFAULT_TZ)
 
     const { data: appointments, error } = await supabase
       .from('appointments')
@@ -40,8 +40,8 @@ export async function POST(request: NextRequest) {
         professionals (name, specialty),
         appointment_confirmations (id, token, reminder_sent_at)
       `)
-      .gte('start_at', tomorrow.toISOString())
-      .lte('start_at', dayAfter.toISOString())
+      .gte('start_at', tomorrowStart)
+      .lte('start_at', tomorrowEnd)
       .eq('status', 'scheduled')
 
     if (error) {
@@ -85,13 +85,17 @@ export async function POST(request: NextRequest) {
         const confirmUrl = `${appUrl}/confirmar/${confirmationToken}?r=si`
         const declineUrl = `${appUrl}/confirmar/${confirmationToken}?r=no`
 
-        const appointmentDate = format(
+        const appointmentDateFormatted = formatInTimezone(
           new Date(apt.start_at),
-          "EEEE d 'de' MMMM",
-          { locale: es }
+          DEFAULT_TZ,
+          { weekday: 'long', day: 'numeric', month: 'long' }
         )
-        const appointmentDateFormatted = appointmentDate.charAt(0).toUpperCase() + appointmentDate.slice(1)
-        const appointmentTime = format(new Date(apt.start_at), 'HH:mm')
+        const capitalizedDate = appointmentDateFormatted.charAt(0).toUpperCase() + appointmentDateFormatted.slice(1)
+        const appointmentTime = formatInTimezone(
+          new Date(apt.start_at),
+          DEFAULT_TZ,
+          { hour: '2-digit', minute: '2-digit', hour12: false }
+        )
 
         const professional = apt.professionals as unknown as { name: string; specialty: string } | null
 
@@ -100,7 +104,7 @@ export async function POST(request: NextRequest) {
           patientName: patient.name,
           professionalName: professional?.name ?? 'Tu médico',
           specialty: professional?.specialty ?? '',
-          appointmentDate: appointmentDateFormatted,
+          appointmentDate: capitalizedDate,
           appointmentTime,
           confirmUrl,
           declineUrl,

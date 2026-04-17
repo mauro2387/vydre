@@ -1,6 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import { format } from 'date-fns'
-import { es } from 'date-fns/locale'
+import { formatInTimezone } from '@/lib/utils'
 import { CheckCircle, XCircle, AlertTriangle, Info } from 'lucide-react'
 import Link from 'next/link'
 
@@ -59,12 +58,17 @@ export default async function ConfirmarPage({
     professionals: { name: string; specialty: string } | null
   } | null
 
+  const DEFAULT_TZ = 'America/Argentina/Buenos_Aires'
   const appointmentDate = appointment
-    ? format(new Date(appointment.start_at), "EEEE d 'de' MMMM", { locale: es })
+    ? formatInTimezone(new Date(appointment.start_at), DEFAULT_TZ, {
+        weekday: 'long', day: 'numeric', month: 'long',
+      })
     : ''
   const formattedDate = appointmentDate.charAt(0).toUpperCase() + appointmentDate.slice(1)
   const appointmentTime = appointment
-    ? format(new Date(appointment.start_at), 'HH:mm')
+    ? formatInTimezone(new Date(appointment.start_at), DEFAULT_TZ, {
+        hour: '2-digit', minute: '2-digit', hour12: false,
+      })
     : ''
 
   // FIX: always show "ya respondiste" if already responded, even with ?r= param

@@ -3,7 +3,10 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
+import { todayInTimezone, dayBoundsUTC } from '@/lib/utils'
 import type { AppointmentWithRelations, AppointmentStatus } from '@/lib/types/database.types'
+
+const DEFAULT_TZ = 'America/Argentina/Buenos_Aires'
 
 export async function getTodayAppointments(): Promise<AppointmentWithRelations[]> {
   const supabase = await createClient()
@@ -14,11 +17,9 @@ export async function getTodayAppointments(): Promise<AppointmentWithRelations[]
   const professional = await getProfessional()
   if (!professional) redirect('/onboarding')
 
-  const now = new Date()
-  const startOfDay = new Date(now)
-  startOfDay.setHours(0, 0, 0, 0)
-  const endOfDay = new Date(now)
-  endOfDay.setHours(23, 59, 59, 999)
+  const tz = professional.timezone ?? DEFAULT_TZ
+  const today = todayInTimezone(tz)
+  const { startUTC, endUTC } = dayBoundsUTC(today, tz)
 
   const { data, error } = await supabase
     .from('appointments')
@@ -29,8 +30,8 @@ export async function getTodayAppointments(): Promise<AppointmentWithRelations[]
       clinical_entries (id)
     `)
     .eq('professional_id', professional.id)
-    .gte('start_at', startOfDay.toISOString())
-    .lte('start_at', endOfDay.toISOString())
+    .gte('start_at', startUTC)
+    .lte('start_at', endUTC)
     .neq('status', 'cancelled')
     .order('start_at', { ascending: true })
     .returns<AppointmentWithRelations[]>()
@@ -48,13 +49,18 @@ export async function getUpcomingUnconfirmed(): Promise<AppointmentWithRelations
   const professional = await getProfessional()
   if (!professional) return []
 
-  const tomorrow = new Date()
-  tomorrow.setDate(tomorrow.getDate() + 1)
-  tomorrow.setHours(0, 0, 0, 0)
+  const tz = professional.timezone ?? DEFAULT_TZ
+  const todayStr = todayInTimezone(tz)
+  const todayDate = new Date(todayStr + 'T00:00:00')
+  const tomorrowDate = new Date(todayDate)
+  tomorrowDate.setDate(tomorrowDate.getDate() + 1)
+  const in7daysDate = new Date(todayDate)
+  in7daysDate.setDate(in7daysDate.getDate() + 7)
 
-  const in7days = new Date()
-  in7days.setDate(in7days.getDate() + 7)
-  in7days.setHours(23, 59, 59, 999)
+  const tomorrowStr = tomorrowDate.toISOString().split('T')[0]
+  const in7daysStr = in7daysDate.toISOString().split('T')[0]
+  const { startUTC: tomorrowStart } = dayBoundsUTC(tomorrowStr, tz)
+  const { endUTC: in7daysEnd } = dayBoundsUTC(in7daysStr, tz)
 
   const { data, error } = await supabase
     .from('appointments')
@@ -65,8 +71,8 @@ export async function getUpcomingUnconfirmed(): Promise<AppointmentWithRelations
     `)
     .eq('professional_id', professional.id)
     .eq('status', 'scheduled')
-    .gte('start_at', tomorrow.toISOString())
-    .lte('start_at', in7days.toISOString())
+    .gte('start_at', tomorrowStart)
+    .lte('start_at', in7daysEnd)
     .order('start_at', { ascending: true })
     .returns<AppointmentWithRelations[]>()
 
@@ -87,11 +93,13 @@ export async function getWeekAppointments(weekStart: string): Promise<Appointmen
   const professional = await getProfessional()
   if (!professional) redirect('/onboarding')
 
-  const start = new Date(weekStart)
-  start.setHours(0, 0, 0, 0)
-  const end = new Date(start)
-  end.setDate(end.getDate() + 6)
-  end.setHours(23, 59, 59, 999)
+  const tz = professional.timezone ?? DEFAULT_TZ
+  const startDate = new Date(weekStart + 'T00:00:00')
+  const endDate = new Date(startDate)
+  endDate.setDate(endDate.getDate() + 6)
+  const endStr = endDate.toISOString().split('T')[0]
+  const { startUTC: start } = dayBoundsUTC(weekStart, tz)
+  const { endUTC: end } = dayBoundsUTC(endStr, tz)
 
   const { data, error } = await supabase
     .from('appointments')
@@ -102,8 +110,8 @@ export async function getWeekAppointments(weekStart: string): Promise<Appointmen
       clinical_entries (id)
     `)
     .eq('professional_id', professional.id)
-    .gte('start_at', start.toISOString())
-    .lte('start_at', end.toISOString())
+    .gte('start_at', start)
+    .lte('start_at', end)
     .neq('status', 'cancelled')
     .order('start_at', { ascending: true })
     .returns<AppointmentWithRelations[]>()
@@ -202,9 +210,8 @@ export async function getRecentActivity(): Promise<ActivityItem[]> {
   const professional = await getProfessional()
   if (!professional) return []
 
-  const since = new Date()
-  since.setHours(since.getHours() - 24)
-  const sinceISO = since.toISOString()
+  const sinceISO = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+  const tz = professional.timezone ?? DEFAULT_TZ
 
   const items: ActivityItem[] = []
 
@@ -222,6 +229,7 @@ export async function getRecentActivity(): Promise<ActivityItem[]> {
     const time = new Date(apt.start_at).toLocaleTimeString('es-UY', {
       hour: '2-digit',
       minute: '2-digit',
+      timeZone: tz,
     })
     items.push({
       id: `apt-${apt.id}`,

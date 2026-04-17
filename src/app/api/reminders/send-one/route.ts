@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { sendReminderEmail } from '@/lib/email'
-import { format } from 'date-fns'
-import { es } from 'date-fns/locale'
+import { formatInTimezone } from '@/lib/utils'
 
 export async function POST(request: NextRequest) {
   try {
@@ -61,14 +60,19 @@ export async function POST(request: NextRequest) {
     }
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
-    const appointmentDate = format(
+    const DEFAULT_TZ = 'America/Argentina/Buenos_Aires'
+    const appointmentDate = formatInTimezone(
       new Date(apt.start_at),
-      "EEEE d 'de' MMMM",
-      { locale: es }
+      DEFAULT_TZ,
+      { weekday: 'long', day: 'numeric', month: 'long' }
     )
     const appointmentDateFormatted =
       appointmentDate.charAt(0).toUpperCase() + appointmentDate.slice(1)
-    const appointmentTime = format(new Date(apt.start_at), 'HH:mm')
+    const appointmentTime = formatInTimezone(
+      new Date(apt.start_at),
+      DEFAULT_TZ,
+      { hour: '2-digit', minute: '2-digit', hour12: false }
+    )
 
     const professional = apt.professionals as unknown as { name: string; specialty: string } | null
 

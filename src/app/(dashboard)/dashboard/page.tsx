@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { CalendarDays, CalendarX, CheckCircle, Clock, AlertTriangle, Calendar, Send, Activity } from 'lucide-react'
-import { format, formatDistanceToNow } from 'date-fns'
+import { formatDistanceToNow } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { getTodayAppointments, getUpcomingUnconfirmed, getRecentActivity } from '@/lib/actions/appointments'
 import { getProfessional } from '@/lib/actions/professional'
@@ -8,7 +8,10 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { AppointmentStatusBadge } from '@/components/app/appointment-status-badge'
 import { ActivationBanner } from '@/components/app/activation-banner'
+import { nowInTimezone, formatInTimezone } from '@/lib/utils'
 import type { AppointmentStatus, Professional } from '@/lib/types/database.types'
+
+const DEFAULT_TZ = 'America/Argentina/Buenos_Aires'
 
 export default async function DashboardPage() {
   const [todayAppointments, unconfirmed, professional, recentActivity] = await Promise.all([
@@ -18,11 +21,16 @@ export default async function DashboardPage() {
     getRecentActivity(),
   ])
 
-  const now = new Date()
-  const hour = now.getHours()
+  const tz = professional?.timezone ?? DEFAULT_TZ
+  const { hour } = nowInTimezone(tz)
   const greeting = hour < 12 ? 'Buenos días' : 'Buenas tardes'
-  const fechaHoy = format(now, "EEEE, d 'de' MMMM 'de' yyyy", { locale: es })
-  const todayFormatted = fechaHoy.charAt(0).toUpperCase() + fechaHoy.slice(1)
+  const todayFormatted = formatInTimezone(new Date(), tz, {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  })
+  const capitalizedDate = todayFormatted.charAt(0).toUpperCase() + todayFormatted.slice(1)
 
   const totalToday = todayAppointments.length
   const confirmedCount = todayAppointments.filter((apt) => {
@@ -37,7 +45,7 @@ export default async function DashboardPage() {
         <h1 className="text-2xl font-semibold">
           {greeting}, {professional?.name?.split(' ')[0]}
         </h1>
-        <p className="text-muted-foreground">{todayFormatted}</p>
+        <p className="text-muted-foreground">{capitalizedDate}</p>
       </div>
 
       {/* Activation banner for new users */}
@@ -98,7 +106,7 @@ export default async function DashboardPage() {
         ) : (
           <div className="space-y-3">
             {todayAppointments.map((apt) => {
-              const startTime = format(new Date(apt.start_at), 'HH:mm')
+              const startTime = formatInTimezone(new Date(apt.start_at), tz, { hour: '2-digit', minute: '2-digit', hour12: false })
               const durationMs = new Date(apt.end_at).getTime() - new Date(apt.start_at).getTime()
               const durationMin = Math.round(durationMs / 60000)
               const patientName = apt.patients?.name ?? 'Paciente sin asignar'
@@ -138,8 +146,13 @@ export default async function DashboardPage() {
           <Card>
             <CardContent className="divide-y pt-4">
               {unconfirmed.map((apt) => {
-                const dateStr = format(new Date(apt.start_at), "EEEE d 'de' MMMM, HH:mm", {
-                  locale: es,
+                const dateStr = formatInTimezone(new Date(apt.start_at), tz, {
+                  weekday: 'long',
+                  day: 'numeric',
+                  month: 'long',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  hour12: false,
                 })
                 const patientName = apt.patients?.name ?? 'Paciente sin asignar'
 
