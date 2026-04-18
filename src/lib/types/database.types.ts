@@ -555,6 +555,66 @@ export type Database = {
         }
         Relationships: []
       }
+      intake_form_templates: {
+        Row: {
+          id: string
+          professional_id: string
+          name: string
+          specialty: string | null
+          fields: IntakeFormField[]
+          active: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          professional_id: string
+          name: string
+          specialty?: string | null
+          fields?: IntakeFormField[]
+          active?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          professional_id?: string
+          name?: string
+          specialty?: string | null
+          fields?: IntakeFormField[]
+          active?: boolean
+        }
+        Relationships: []
+      }
+      intake_form_responses: {
+        Row: {
+          id: string
+          template_id: string
+          patient_id: string | null
+          appointment_id: string | null
+          token: string
+          responses: Record<string, unknown>
+          completed_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          template_id: string
+          patient_id?: string | null
+          appointment_id?: string | null
+          token?: string
+          responses?: Record<string, unknown>
+          completed_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          template_id?: string
+          patient_id?: string | null
+          appointment_id?: string | null
+          responses?: Record<string, unknown>
+          completed_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -593,6 +653,15 @@ export type MedicationEntry = {
   dose: string
   frequency: string
   notes?: string
+}
+
+// Intake form field definition
+export type IntakeFormField = {
+  id: string
+  type: 'text' | 'textarea' | 'select' | 'multiselect' | 'boolean' | 'date'
+  label: string
+  required: boolean
+  options?: string[]
 }
 
 // Status types

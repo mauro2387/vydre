@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
 import { format, addDays, isSameDay } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { ChevronLeft, ChevronRight, Plus, MoreVertical, Bell, BellRing, FileText, ClipboardList, CalendarPlus, DollarSign, Repeat } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Plus, MoreVertical, Bell, BellRing, FileText, ClipboardList, CalendarPlus, DollarSign, Repeat, FileQuestion } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -22,6 +22,7 @@ import { RecordPaymentDialog } from '@/components/app/record-payment-dialog'
 import { updateAppointmentStatus, cancelAppointment } from '@/lib/actions/appointments'
 import { isAppointmentPast } from '@/lib/utils'
 import { parseActionError } from '@/lib/utils/error-messages'
+import { sendIntakeForm, getIntakeTemplates } from '@/lib/actions/intake'
 import { useMediaQuery } from '@/lib/hooks/use-media-query'
 import type {
   AppointmentWithRelations,
@@ -374,7 +375,29 @@ function TurnoCard({
   const showRegisterConsultation = (status === 'confirmed' || status === 'scheduled') &&
     isAppointmentPast(appointment.start_at)
   const showRegisterPayment = status !== 'cancelled'
-  const hasActions = showCompleted || showNoShow || showCancel || showReminder || showViewConsultation || showRegisterConsultation || showRegisterPayment
+  const showIntakeForm = status === 'scheduled' && !!appointment.patients
+  const hasActions = showCompleted || showNoShow || showCancel || showReminder || showViewConsultation || showRegisterConsultation || showRegisterPayment || showIntakeForm
+
+  const handleSendIntakeForm = async () => {
+    try {
+      const templates = await getIntakeTemplates()
+      if (templates.length === 0) {
+        toast.error('No tenés formularios configurados. Configurá uno en Configuración.')
+        return
+      }
+      const template = templates[0]
+      const result = await sendIntakeForm({
+        templateId: template.id,
+        patientId: appointment.patient_id!,
+        appointmentId: appointment.id,
+      })
+      const url = `${window.location.origin}${result.url}`
+      await navigator.clipboard.writeText(url)
+      toast.success('Link del formulario copiado al portapapeles')
+    } catch (err) {
+      toast.error(parseActionError(err))
+    }
+  }
 
   const handleSendReminder = async () => {
     try {
@@ -440,6 +463,12 @@ function TurnoCard({
                 <DropdownMenuItem onClick={handleSendReminder}>
                   <Bell className="mr-2 h-4 w-4" />
                   Enviar recordatorio
+                </DropdownMenuItem>
+              )}
+              {showIntakeForm && (
+                <DropdownMenuItem onClick={handleSendIntakeForm}>
+                  <FileQuestion className="mr-2 h-4 w-4" />
+                  Enviar formulario pre-consulta
                 </DropdownMenuItem>
               )}
               {showRegisterPayment && (
