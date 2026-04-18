@@ -25,6 +25,7 @@ import {
 import { parseActionError } from '@/lib/utils/error-messages'
 import { useAutoSave } from '@/lib/hooks/use-auto-save'
 import { AutoSaveIndicator } from '@/components/app/auto-save-indicator'
+import { findTemplateForSpecialty } from '@/lib/utils/clinical-templates'
 import type { AppointmentWithRelations, MedicationEntry } from '@/lib/types/database.types'
 
 type ClinicalForm = {
@@ -53,10 +54,12 @@ export function ClinicalEntryModal({
   appointment,
   open,
   onClose,
+  specialty,
 }: {
   appointment: AppointmentWithRelations
   open: boolean
   onClose: () => void
+  specialty?: string
 }) {
   const [vista, setVista] = useState<'form' | 'summary'>('form')
   const [saving, setSaving] = useState(false)
@@ -71,6 +74,8 @@ export function ClinicalEntryModal({
   const patientEmail = appointment.patients?.email ?? null
   const patientPhone = appointment.patients?.phone ?? null
   const patientId = appointment.patients?.id ?? ''
+  const template = findTemplateForSpecialty(specialty ?? '')
+  const ph = template.placeholders
   const dateStr = format(new Date(appointment.start_at), "EEEE d 'de' MMMM", { locale: es })
   const formattedDate = dateStr.charAt(0).toUpperCase() + dateStr.slice(1)
 
@@ -292,7 +297,7 @@ export function ClinicalEntryModal({
                 <Textarea
                   id="chiefComplaint"
                   rows={2}
-                  placeholder="¿Por qué vino el paciente?"
+                  placeholder={ph.chiefComplaint ?? '¿Por qué vino el paciente?'}
                   {...register('chiefComplaint', { required: 'El motivo es requerido' })}
                 />
                 {errors.chiefComplaint && (
@@ -306,7 +311,7 @@ export function ClinicalEntryModal({
                 <Textarea
                   id="clinicalHistory"
                   rows={2}
-                  placeholder="Antecedentes que aplican a esta consulta..."
+                  placeholder={ph.clinicalHistory ?? 'Antecedentes que aplican a esta consulta...'}
                   {...register('clinicalHistory')}
                 />
               </div>
@@ -317,7 +322,7 @@ export function ClinicalEntryModal({
                 <Textarea
                   id="physicalExam"
                   rows={2}
-                  placeholder="Hallazgos del examen físico..."
+                  placeholder={ph.physicalExam ?? 'Hallazgos del examen físico...'}
                   {...register('physicalExam')}
                 />
               </div>
@@ -328,7 +333,7 @@ export function ClinicalEntryModal({
                 <Textarea
                   id="diagnosis"
                   rows={2}
-                  placeholder="Diagnóstico presuntivo o confirmado..."
+                  placeholder={ph.diagnosis ?? 'Diagnóstico presuntivo o confirmado...'}
                   {...register('diagnosis')}
                 />
               </div>
@@ -339,7 +344,7 @@ export function ClinicalEntryModal({
                 <Textarea
                   id="treatmentPlan"
                   rows={3}
-                  placeholder="¿Qué se realizó y qué se indica?"
+                  placeholder={ph.treatmentPlan ?? '¿Qué se realizó y qué se indica?'}
                   {...register('treatmentPlan')}
                 />
               </div>
@@ -393,7 +398,7 @@ export function ClinicalEntryModal({
                 <Textarea
                   id="indications"
                   rows={2}
-                  placeholder="Cuidados, restricciones, recomendaciones..."
+                  placeholder={ph.indications ?? 'Cuidados, restricciones, recomendaciones...'}
                   {...register('indications')}
                 />
               </div>
@@ -404,7 +409,7 @@ export function ClinicalEntryModal({
                 <Textarea
                   id="nextSteps"
                   rows={2}
-                  placeholder="Estudios a solicitar, próximo control..."
+                  placeholder={ph.nextSteps ?? 'Estudios a solicitar, próximo control...'}
                   {...register('nextSteps')}
                 />
               </div>

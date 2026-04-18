@@ -316,6 +316,7 @@ export function AgendaView({
             setPostConsultationApt(null)
             router.refresh()
           }}
+          specialty={professional.specialty}
         />
       )}
 
