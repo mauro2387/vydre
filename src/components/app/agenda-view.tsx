@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
 import { format, addDays, isSameDay } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { ChevronLeft, ChevronRight, Plus, MoreVertical, Bell, BellRing, FileText, ClipboardList, CalendarPlus, DollarSign } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Plus, MoreVertical, Bell, BellRing, FileText, ClipboardList, CalendarPlus, DollarSign, Repeat } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -358,6 +358,10 @@ function TurnoCard({
   const patientName = appointment.patients?.name ?? 'Paciente sin asignar'
   const status = appointment.status as AppointmentStatus
   const confirmation = (appointment.appointment_confirmations?.response as 'confirmed' | 'declined' | null) ?? null
+  const isRecurring = !!appointment.recurrence_group_id
+  const recurrenceLabel = appointment.recurrence_rule === 'weekly' ? 'Semanal'
+    : appointment.recurrence_rule === 'biweekly' ? 'Quincenal'
+    : appointment.recurrence_rule === 'monthly' ? 'Mensual' : null
 
   const showCompleted = status !== 'completed' && status !== 'no_show'
   const showNoShow = status !== 'completed' && status !== 'no_show'
@@ -397,6 +401,12 @@ function TurnoCard({
         </div>
         <div className="flex-1">
           <p className="font-medium">{patientName}</p>
+          {isRecurring && recurrenceLabel && (
+            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+              <Repeat className="h-3 w-3" />
+              {recurrenceLabel}
+            </span>
+          )}
         </div>
         <AppointmentStatusBadge status={status} confirmation={confirmation} />
         {appointment.appointment_confirmations?.reminder_sent_at && (
