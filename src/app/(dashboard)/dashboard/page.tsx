@@ -1,10 +1,12 @@
 import Link from 'next/link'
-import { CalendarDays, CalendarX, CheckCircle, Clock, AlertTriangle, Calendar, Send, Activity } from 'lucide-react'
-import { formatDistanceToNow } from 'date-fns'
+import { CalendarDays, CalendarX, CheckCircle, Clock, AlertTriangle, Calendar, Send, Activity, DollarSign, Cake, UserX } from 'lucide-react'
+import { formatDistanceToNow, format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { getTodayAppointments, getUpcomingUnconfirmed, getRecentActivity } from '@/lib/actions/appointments'
 import { getProfessional } from '@/lib/actions/professional'
-import { Card, CardContent } from '@/components/ui/card'
+import { getUpcomingBirthdays, getInactivePatients } from '@/lib/actions/patients'
+import { getPaymentsSummary } from '@/lib/actions/payments'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { AppointmentStatusBadge } from '@/components/app/appointment-status-badge'
 import { ActivationBanner } from '@/components/app/activation-banner'
@@ -12,11 +14,14 @@ import { nowInTimezone, formatInTimezone, DEFAULT_TZ } from '@/lib/utils'
 import type { AppointmentStatus, Professional } from '@/lib/types/database.types'
 
 export default async function DashboardPage() {
-  const [todayAppointments, unconfirmed, professional, recentActivity] = await Promise.all([
+  const [todayAppointments, unconfirmed, professional, recentActivity, birthdays, inactive, paymentsSummary] = await Promise.all([
     getTodayAppointments(),
     getUpcomingUnconfirmed(),
     getProfessional(),
     getRecentActivity(),
+    getUpcomingBirthdays(7),
+    getInactivePatients(60),
+    getPaymentsSummary(),
   ])
 
   const tz = professional?.timezone ?? DEFAULT_TZ
@@ -36,6 +41,9 @@ export default async function DashboardPage() {
   }).length
   const pendingCount = totalToday - confirmedCount
 
+  const fmtCurrency = (n: number) =>
+    new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(n)
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -51,8 +59,8 @@ export default async function DashboardPage() {
         <ActivationBanner professional={professional as Professional} />
       )}
 
-      {/* Metrics */}
-      <div className="grid gap-4 sm:grid-cols-3">
+      {/* KPI cards — 4 columns */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardContent className="flex items-center gap-4 pt-6">
             <div className="rounded-lg bg-primary/10 p-3">
@@ -86,132 +94,214 @@ export default async function DashboardPage() {
             </div>
           </CardContent>
         </Card>
+        <Card>
+          <CardContent className="flex items-center gap-4 pt-6">
+            <div className="rounded-lg bg-emerald-100 p-3">
+              <DollarSign className="h-5 w-5 text-emerald-700" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold">{fmtCurrency(paymentsSummary.total)}</p>
+              <p className="text-sm text-muted-foreground">
+                Ingresos del mes ({paymentsSummary.count} cobros)
+              </p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Today agenda */}
-      <div>
-        <h2 className="mb-4 text-lg font-semibold">Agenda de hoy</h2>
-        {todayAppointments.length === 0 ? (
+      {/* Two-column layout: Agenda + sidebar */}
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Left: today agenda (2/3) */}
+        <div className="space-y-6 lg:col-span-2">
+          <div>
+            <h2 className="mb-4 text-lg font-semibold">Agenda de hoy</h2>
+            {todayAppointments.length === 0 ? (
+              <Card>
+                <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+                  <CalendarX className="mb-4 h-12 w-12 text-muted-foreground/50" />
+                  <p className="text-muted-foreground">No tenés turnos agendados para hoy</p>
+                  <Link href="/agenda" className="mt-3 text-sm font-medium text-blue-600 hover:underline">
+                    Ir a la agenda para crear uno
+                  </Link>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-3">
+                {todayAppointments.map((apt) => {
+                  const startTime = formatInTimezone(new Date(apt.start_at), tz, { hour: '2-digit', minute: '2-digit', hour12: false })
+                  const durationMs = new Date(apt.end_at).getTime() - new Date(apt.start_at).getTime()
+                  const durationMin = Math.round(durationMs / 60000)
+                  const patientName = apt.patients?.name ?? 'Paciente sin asignar'
+                  const confirmationResponse = (apt.appointment_confirmations?.response as 'confirmed' | 'declined' | null) ?? null
+
+                  return (
+                    <Card key={apt.id} className="cursor-default transition-colors hover:bg-muted/50">
+                      <CardContent className="flex items-center gap-4 py-4">
+                        <div className="text-center">
+                          <p className="text-lg font-bold">{startTime}</p>
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-medium">{patientName}</p>
+                          <p className="text-sm text-muted-foreground">{durationMin} min</p>
+                        </div>
+                        <AppointmentStatusBadge
+                          status={apt.status as AppointmentStatus}
+                          confirmation={confirmationResponse}
+                        />
+                      </CardContent>
+                    </Card>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Unconfirmed alerts */}
+          {unconfirmed.length > 0 && (
+            <div>
+              <div className="mb-4 flex items-center gap-2">
+                <h2 className="text-lg font-semibold">Turnos sin confirmar esta semana</h2>
+                <Badge variant="secondary" className="bg-yellow-100 text-yellow-700 hover:bg-yellow-100">
+                  {unconfirmed.length}
+                </Badge>
+              </div>
+              <Card>
+                <CardContent className="divide-y pt-4">
+                  {unconfirmed.map((apt) => {
+                    const dateStr = formatInTimezone(new Date(apt.start_at), tz, {
+                      weekday: 'long',
+                      day: 'numeric',
+                      month: 'long',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      hour12: false,
+                    })
+                    const patientName = apt.patients?.name ?? 'Paciente sin asignar'
+
+                    return (
+                      <div key={apt.id} className="flex items-center gap-3 py-3">
+                        <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                        <div>
+                          <p className="text-sm font-medium">{patientName}</p>
+                          <p className="text-sm capitalize text-muted-foreground">{dateStr}</p>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {/* Recent activity */}
+          <div>
+            <h2 className="mb-4 text-lg font-semibold">Actividad reciente</h2>
+            {recentActivity.length === 0 ? (
+              <Card>
+                <CardContent className="flex flex-col items-center justify-center py-8 text-center">
+                  <Activity className="mb-3 h-8 w-8 text-muted-foreground/50" />
+                  <p className="text-sm text-muted-foreground">Sin actividad en las últimas 24 horas</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card>
+                <CardContent className="divide-y pt-4">
+                  {recentActivity.map((item) => {
+                    const Icon = item.type === 'appointment'
+                      ? Calendar
+                      : item.type === 'confirmation'
+                        ? CheckCircle
+                        : Send
+                    const iconColor = item.type === 'appointment'
+                      ? 'text-primary'
+                      : item.type === 'confirmation'
+                        ? 'text-green-600'
+                        : 'text-blue-600'
+
+                    return (
+                      <div key={item.id} className="flex items-center gap-3 py-3">
+                        <Icon className={`h-4 w-4 ${iconColor}`} />
+                        <div className="flex-1">
+                          <p className="text-sm">{item.description}</p>
+                        </div>
+                        <span className="text-xs text-muted-foreground">
+                          {formatDistanceToNow(new Date(item.timestamp), {
+                            locale: es,
+                            addSuffix: true,
+                          })}
+                        </span>
+                      </div>
+                    )
+                  })}
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </div>
+
+        {/* Right sidebar (1/3): birthdays + inactive */}
+        <div className="space-y-6">
+          {/* Birthdays */}
           <Card>
-            <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-              <CalendarX className="mb-4 h-12 w-12 text-muted-foreground/50" />
-              <p className="text-muted-foreground">No tenés turnos agendados para hoy</p>
-              <Link href="/agenda" className="mt-3 text-sm font-medium text-blue-600 hover:underline">
-                Ir a la agenda para crear uno
-              </Link>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Cake className="h-4 w-4 text-pink-500" />
+                Cumpleaños próximos
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {birthdays.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Sin cumpleaños esta semana</p>
+              ) : (
+                <ul className="space-y-2">
+                  {birthdays.map((p) => {
+                    const [, m, d] = p.dob.split('-').map(Number)
+                    const bday = new Date(new Date().getFullYear(), m - 1, d)
+                    const label = format(bday, "d 'de' MMMM", { locale: es })
+                    return (
+                      <li key={p.id} className="flex items-center justify-between text-sm">
+                        <Link href={`/pacientes?id=${p.id}`} className="font-medium hover:underline">
+                          {p.name}
+                        </Link>
+                        <span className="text-xs text-muted-foreground">{label}</span>
+                      </li>
+                    )
+                  })}
+                </ul>
+              )}
             </CardContent>
           </Card>
-        ) : (
-          <div className="space-y-3">
-            {todayAppointments.map((apt) => {
-              const startTime = formatInTimezone(new Date(apt.start_at), tz, { hour: '2-digit', minute: '2-digit', hour12: false })
-              const durationMs = new Date(apt.end_at).getTime() - new Date(apt.start_at).getTime()
-              const durationMin = Math.round(durationMs / 60000)
-              const patientName = apt.patients?.name ?? 'Paciente sin asignar'
-              const confirmationResponse = (apt.appointment_confirmations?.response as 'confirmed' | 'declined' | null) ?? null
 
-              return (
-                <Card key={apt.id} className="cursor-default transition-colors hover:bg-muted/50">
-                  <CardContent className="flex items-center gap-4 py-4">
-                    <div className="text-center">
-                      <p className="text-lg font-bold">{startTime}</p>
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-medium">{patientName}</p>
-                      <p className="text-sm text-muted-foreground">{durationMin} min</p>
-                    </div>
-                    <AppointmentStatusBadge
-                      status={apt.status as AppointmentStatus}
-                      confirmation={confirmationResponse}
-                    />
-                  </CardContent>
-                </Card>
-              )
-            })}
-          </div>
-        )}
-      </div>
-
-      {/* Unconfirmed alerts */}
-      {unconfirmed.length > 0 && (
-        <div>
-          <div className="mb-4 flex items-center gap-2">
-            <h2 className="text-lg font-semibold">Turnos sin confirmar esta semana</h2>
-            <Badge variant="secondary" className="bg-yellow-100 text-yellow-700 hover:bg-yellow-100">
-              {unconfirmed.length}
-            </Badge>
-          </div>
+          {/* Inactive patients */}
           <Card>
-            <CardContent className="divide-y pt-4">
-              {unconfirmed.map((apt) => {
-                const dateStr = formatInTimezone(new Date(apt.start_at), tz, {
-                  weekday: 'long',
-                  day: 'numeric',
-                  month: 'long',
-                  hour: '2-digit',
-                  minute: '2-digit',
-                  hour12: false,
-                })
-                const patientName = apt.patients?.name ?? 'Paciente sin asignar'
-
-                return (
-                  <div key={apt.id} className="flex items-center gap-3 py-3">
-                    <AlertTriangle className="h-4 w-4 text-yellow-600" />
-                    <div>
-                      <p className="text-sm font-medium">{patientName}</p>
-                      <p className="text-sm capitalize text-muted-foreground">{dateStr}</p>
-                    </div>
-                  </div>
-                )
-              })}
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <UserX className="h-4 w-4 text-orange-500" />
+                Pacientes inactivos
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {inactive.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Todos los pacientes están al día</p>
+              ) : (
+                <ul className="space-y-2">
+                  {inactive.map((p) => (
+                    <li key={p.id} className="flex items-center justify-between text-sm">
+                      <Link href={`/pacientes?id=${p.id}`} className="font-medium hover:underline">
+                        {p.name}
+                      </Link>
+                      <span className="text-xs text-muted-foreground">
+                        {p.lastVisit
+                          ? formatDistanceToNow(new Date(p.lastVisit), { locale: es, addSuffix: true })
+                          : 'Sin visitas'}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </CardContent>
           </Card>
         </div>
-      )}
-
-      {/* Recent activity */}
-      <div>
-        <h2 className="mb-4 text-lg font-semibold">Actividad reciente</h2>
-        {recentActivity.length === 0 ? (
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-8 text-center">
-              <Activity className="mb-3 h-8 w-8 text-muted-foreground/50" />
-              <p className="text-sm text-muted-foreground">Sin actividad en las últimas 24 horas</p>
-            </CardContent>
-          </Card>
-        ) : (
-          <Card>
-            <CardContent className="divide-y pt-4">
-              {recentActivity.map((item) => {
-                const Icon = item.type === 'appointment'
-                  ? Calendar
-                  : item.type === 'confirmation'
-                    ? CheckCircle
-                    : Send
-                const iconColor = item.type === 'appointment'
-                  ? 'text-primary'
-                  : item.type === 'confirmation'
-                    ? 'text-green-600'
-                    : 'text-blue-600'
-
-                return (
-                  <div key={item.id} className="flex items-center gap-3 py-3">
-                    <Icon className={`h-4 w-4 ${iconColor}`} />
-                    <div className="flex-1">
-                      <p className="text-sm">{item.description}</p>
-                    </div>
-                    <span className="text-xs text-muted-foreground">
-                      {formatDistanceToNow(new Date(item.timestamp), {
-                        locale: es,
-                        addSuffix: true,
-                      })}
-                    </span>
-                  </div>
-                )
-              })}
-            </CardContent>
-          </Card>
-        )}
       </div>
     </div>
   )

@@ -7,6 +7,10 @@ import { getProfessional, checkActivationComplete } from './professional'
 import { createPatientSchema, updatePatientSchema, parseOrThrow } from '@/lib/validation/schemas'
 import type { Patient, PatientDetail } from '@/lib/types/database.types'
 
+async function getProfessionalSafe() {
+  try { return await getProfessional() } catch { return null }
+}
+
 export async function getPatients(search?: string): Promise<Patient[]> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -208,4 +212,93 @@ export async function updatePatient(
   if (error) throw new Error(error.message)
 
   revalidatePath('/pacientes')
+}
+
+/**
+ * Patients whose birthday (dob) is within the next N days.
+ * Returns name + dob. Max 10.
+ */
+export async function getUpcomingBirthdays(days = 7): Promise<{ id: string; name: string; dob: string }[]> {
+  const supabase = await createClient()
+  const professional = await getProfessionalSafe()
+  if (!professional) return []
+
+  // We fetch all patients with a dob then filter in JS — patients table is small per professional.
+  const { data } = await supabase
+    .from('patients')
+    .select('id, name, dob')
+    .eq('professional_id', professional.id)
+    .not('dob', 'is', null)
+
+  if (!data) return []
+
+  const today = new Date()
+  const threshold = new Date()
+  threshold.setDate(today.getDate() + days)
+
+  return (data as { id: string; name: string; dob: string }[])
+    .filter((p) => {
+      const [, m, d] = p.dob.split('-').map(Number)
+      const thisYear = new Date(today.getFullYear(), m - 1, d)
+      if (thisYear < today) thisYear.setFullYear(thisYear.getFullYear() + 1)
+      return thisYear >= today && thisYear <= threshold
+    })
+    .sort((a, b) => {
+      const [, am, ad] = a.dob.split('-').map(Number)
+      const [, bm, bd] = b.dob.split('-').map(Number)
+      return am * 100 + ad - (bm * 100 + bd)
+    })
+    .slice(0, 10)
+}
+
+/**
+ * Patients without any appointment in the last N days.
+ * Max 10.
+ */
+export async function getInactivePatients(daysSinceLastVisit = 60): Promise<{ id: string; name: string; lastVisit: string | null }[]> {
+  const supabase = await createClient()
+  const professional = await getProfessionalSafe()
+  if (!professional) return []
+
+  const cutoff = new Date()
+  cutoff.setDate(cutoff.getDate() - daysSinceLastVisit)
+
+  // Fetch all patients and their latest completed appointment
+  const { data: patients } = await supabase
+    .from('patients')
+    .select('id, name')
+    .eq('professional_id', professional.id)
+
+  if (!patients || patients.length === 0) return []
+
+  const { data: appointments } = await supabase
+    .from('appointments')
+    .select('patient_id, start_at')
+    .eq('professional_id', professional.id)
+    .eq('status', 'completed')
+    .order('start_at', { ascending: false })
+
+  const lastVisitMap = new Map<string, string>()
+  for (const apt of appointments ?? []) {
+    if (apt.patient_id && !lastVisitMap.has(apt.patient_id)) {
+      lastVisitMap.set(apt.patient_id, apt.start_at)
+    }
+  }
+
+  return patients
+    .map((p) => ({
+      id: p.id,
+      name: p.name,
+      lastVisit: lastVisitMap.get(p.id) ?? null,
+    }))
+    .filter((p) => {
+      if (!p.lastVisit) return true // never visited
+      return new Date(p.lastVisit) < cutoff
+    })
+    .sort((a, b) => {
+      if (!a.lastVisit) return -1
+      if (!b.lastVisit) return 1
+      return new Date(a.lastVisit).getTime() - new Date(b.lastVisit).getTime()
+    })
+    .slice(0, 10)
 }
