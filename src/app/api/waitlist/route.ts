@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { z } from 'zod'
 import { sendWaitlistWelcomeEmail } from '@/lib/email'
+import { rateLimit, getClientKey } from '@/lib/utils/rate-limit'
 
 function getServiceClient() {
   return createClient(
@@ -19,6 +20,16 @@ const waitlistSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limit: 5 signups per IP per hour.
+    const clientKey = getClientKey(request)
+    const rl = rateLimit(`waitlist:${clientKey}`, { limit: 5, windowMs: 60 * 60 * 1000 })
+    if (!rl.ok) {
+      return NextResponse.json(
+        { error: 'Demasiados intentos. Intentá de nuevo más tarde.' },
+        { status: 429, headers: { 'Retry-After': String(rl.retryAfterSec) } },
+      )
+    }
+
     const body = await request.json()
     const parsed = waitlistSchema.safeParse(body)
 

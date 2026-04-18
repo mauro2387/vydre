@@ -33,6 +33,8 @@ export async function updateSession(request: NextRequest) {
   const isPublicRoute =
     url.pathname.startsWith('/login') ||
     url.pathname.startsWith('/registro') ||
+    url.pathname.startsWith('/recuperar') ||
+    url.pathname.startsWith('/api/auth/callback') ||
     url.pathname.startsWith('/confirmar') ||
     url.pathname.startsWith('/privacidad') ||
     url.pathname.startsWith('/api/waitlist') ||
@@ -42,7 +44,7 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  if (user && (url.pathname === '/login' || url.pathname === '/registro')) {
+  if (user && (url.pathname === '/login' || url.pathname === '/registro' || url.pathname === '/recuperar')) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 

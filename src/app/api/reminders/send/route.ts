@@ -33,6 +33,8 @@ export async function POST(request: NextRequest) {
       .from('appointments')
       .select(`
         id,
+        professional_id,
+        patient_id,
         start_at,
         end_at,
         status,
@@ -64,6 +66,36 @@ export async function POST(request: NextRequest) {
 
         const patient = apt.patients as unknown as { name: string; email: string | null; phone: string } | null
         if (!patient?.email) {
+          // Notify the professional in-app (once per appointment) so they know
+          // the reminder was skipped. Dedup by checking for a prior
+          // 'reminder_skipped' message on this appointment.
+          const { data: priorSkip } = await supabase
+            .from('messages')
+            .select('id')
+            .eq('appointment_id', apt.id)
+            .eq('type', 'reminder_skipped')
+            .maybeSingle()
+
+          if (!priorSkip && apt.professional_id) {
+            await supabase.from('messages').insert({
+              appointment_id: apt.id,
+              professional_id: apt.professional_id,
+              type: 'reminder_skipped',
+              channel: 'email',
+              status: 'skipped',
+              recipient: 'none',
+              error: 'patient_without_email',
+            })
+
+            await supabase.from('notifications').insert({
+              professional_id: apt.professional_id,
+              type: 'reminder_skipped',
+              title: 'Recordatorio no enviado',
+              body: `No se pudo enviar el recordatorio: el paciente no tiene email registrado.`,
+              action_url: apt.patient_id ? `/pacientes?id=${apt.patient_id}` : '/agenda',
+            })
+          }
+
           results.push({ id: apt.id, status: 'no_email' })
           continue
         }

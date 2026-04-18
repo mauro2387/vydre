@@ -109,10 +109,9 @@ export default function LoginPage() {
                 {loading ? 'Iniciando sesión...' : 'Ingresar a Vydre'}
               </Button>
               <p className="text-center text-xs text-muted-foreground">
-                ¿Olvidaste tu contraseña? Contactanos a{' '}
-                <a href="mailto:contacto@vydre.com" className="underline">
-                  contacto@vydre.com
-                </a>
+                <Link href="/recuperar" className="underline">
+                  ¿Olvidaste tu contraseña?
+                </Link>
               </p>
             </CardFooter>
           </form>
