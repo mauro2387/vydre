@@ -13,6 +13,7 @@ export type Database = {
           timezone: string
           schedule: Json
           appointment_duration: number
+          default_fees: Json
           onboarding_complete: boolean
           first_patient_created: boolean
           first_appointment_created: boolean
@@ -30,6 +31,7 @@ export type Database = {
           timezone?: string
           schedule?: Json
           appointment_duration?: number
+          default_fees?: Json
           onboarding_complete?: boolean
           first_patient_created?: boolean
           first_appointment_created?: boolean
@@ -47,6 +49,7 @@ export type Database = {
           timezone?: string
           schedule?: Json
           appointment_duration?: number
+          default_fees?: Json
           onboarding_complete?: boolean
           first_patient_created?: boolean
           first_appointment_created?: boolean
@@ -461,6 +464,48 @@ export type Database = {
           end_date?: string | null
           active?: boolean
           notes?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      payments: {
+        Row: {
+          id: string
+          professional_id: string
+          appointment_id: string | null
+          patient_id: string | null
+          amount: number
+          currency: string
+          method: 'cash' | 'transfer' | 'card' | 'mercadopago' | 'other'
+          status: 'paid' | 'pending' | 'refunded'
+          notes: string | null
+          paid_at: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          professional_id: string
+          appointment_id?: string | null
+          patient_id?: string | null
+          amount: number
+          currency?: string
+          method: 'cash' | 'transfer' | 'card' | 'mercadopago' | 'other'
+          status?: 'paid' | 'pending' | 'refunded'
+          notes?: string | null
+          paid_at?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          professional_id?: string
+          appointment_id?: string | null
+          patient_id?: string | null
+          amount?: number
+          currency?: string
+          method?: 'cash' | 'transfer' | 'card' | 'mercadopago' | 'other'
+          status?: 'paid' | 'pending' | 'refunded'
+          notes?: string | null
+          paid_at?: string
           created_at?: string
         }
         Relationships: []

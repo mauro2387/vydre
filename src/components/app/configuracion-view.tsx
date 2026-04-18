@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { User, Clock, Timer, Globe, Shield, Loader2, KeyRound, AlertTriangle, Mail } from 'lucide-react'
+import { User, Clock, Timer, Globe, Shield, Loader2, KeyRound, AlertTriangle, Mail, DollarSign } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -30,6 +30,7 @@ import {
   changePassword,
   signOutAllSessions,
 } from '@/lib/actions/professional'
+import { updateDefaultFees } from '@/lib/actions/payments'
 import { parseActionError } from '@/lib/utils/error-messages'
 import { PasswordStrength } from '@/components/app/password-strength'
 import type { Professional } from '@/lib/types/database.types'
@@ -88,6 +89,8 @@ export function ConfiguracionView({
       <ScheduleSection professional={professional} />
       <Separator />
       <DurationSection professional={professional} />
+      <Separator />
+      <FeesSection professional={professional} />
       <Separator />
       <TimezoneSection professional={professional} />
       <Separator />
@@ -328,6 +331,107 @@ function DurationSection({ professional }: { professional: Professional }) {
               </>
             ) : hasChanges ? (
               'Guardar preferencias'
+            ) : (
+              'Sin cambios'
+            )}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+// SECTION 3B — Default fees per duration
+function FeesSection({ professional }: { professional: Professional }) {
+  const initial = (professional.default_fees as Record<string, number> | null) ?? {}
+  const commonDurations = [15, 20, 30, 45, 60, 90]
+  const [fees, setFees] = useState<Record<string, string>>(() => {
+    const seed: Record<string, string> = {}
+    for (const d of commonDurations) {
+      seed[String(d)] = initial[String(d)] != null ? String(initial[String(d)]) : ''
+    }
+    // Include any custom durations already saved
+    for (const k of Object.keys(initial)) {
+      if (!(k in seed)) seed[k] = String(initial[k])
+    }
+    return seed
+  })
+  const [saving, setSaving] = useState(false)
+  const initialRef = useRef(JSON.stringify(initial))
+
+  const currentJson = JSON.stringify(
+    Object.fromEntries(
+      Object.entries(fees)
+        .filter(([, v]) => v.trim() !== '' && Number(v) > 0)
+        .map(([k, v]) => [k, Number(v)])
+    )
+  )
+  const hasChanges = currentJson !== initialRef.current
+
+  const handleSave = async () => {
+    try {
+      setSaving(true)
+      const parsed: Record<string, number> = {}
+      for (const [k, v] of Object.entries(fees)) {
+        if (v.trim() === '') continue
+        const n = Number(v)
+        if (!Number.isFinite(n) || n < 0) {
+          toast.error(`Valor inválido para ${k} min`)
+          return
+        }
+        parsed[k] = n
+      }
+      await updateDefaultFees(parsed)
+      initialRef.current = JSON.stringify(parsed)
+      toast.success('Aranceles actualizados')
+    } catch (error) {
+      toast.error(parseActionError(error))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <DollarSign className="h-5 w-5" />
+          Aranceles por duración
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <p className="text-sm text-muted-foreground">
+          Definí el monto sugerido que se va a precargar al registrar un cobro,
+          según la duración del turno. Podés dejar en blanco las duraciones que no usás.
+        </p>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          {Object.keys(fees).sort((a, b) => Number(a) - Number(b)).map((dur) => (
+            <div key={dur} className="space-y-1">
+              <Label htmlFor={`fee-${dur}`} className="text-xs">
+                {dur} min
+              </Label>
+              <Input
+                id={`fee-${dur}`}
+                type="number"
+                inputMode="decimal"
+                min="0"
+                step="100"
+                value={fees[dur]}
+                onChange={(e) => setFees((prev) => ({ ...prev, [dur]: e.target.value }))}
+                placeholder="0"
+              />
+            </div>
+          ))}
+        </div>
+        <div className="flex justify-end">
+          <Button onClick={handleSave} disabled={!hasChanges || saving}>
+            {saving ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Guardando...
+              </>
+            ) : hasChanges ? (
+              'Guardar aranceles'
             ) : (
               'Sin cambios'
             )}

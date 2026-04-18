@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
 import { format, addDays, isSameDay } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { ChevronLeft, ChevronRight, Plus, MoreVertical, Bell, BellRing, FileText, ClipboardList, CalendarPlus } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Plus, MoreVertical, Bell, BellRing, FileText, ClipboardList, CalendarPlus, DollarSign } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -18,6 +18,7 @@ import {
 import { AppointmentStatusBadge } from '@/components/app/appointment-status-badge'
 import { NewAppointmentModal } from '@/components/app/new-appointment-modal'
 import { ClinicalEntryModal } from '@/components/app/clinical-entry-modal'
+import { RecordPaymentDialog } from '@/components/app/record-payment-dialog'
 import { updateAppointmentStatus, cancelAppointment } from '@/lib/actions/appointments'
 import { isAppointmentPast } from '@/lib/utils'
 import { parseActionError } from '@/lib/utils/error-messages'
@@ -44,6 +45,7 @@ export function AgendaView({
   const [isPending, startTransition] = useTransition()
   const [openNewAppointment, setOpenNewAppointment] = useState(false)
   const [postConsultationApt, setPostConsultationApt] = useState<AppointmentWithRelations | null>(null)
+  const [paymentApt, setPaymentApt] = useState<AppointmentWithRelations | null>(null)
   const isMobile = useMediaQuery('(max-width: 768px)')
   const [mobileDayIndex, setMobileDayIndex] = useState(() => {
     // Default to today's index in the week, or 0
@@ -234,6 +236,7 @@ export function AgendaView({
                       onStatusUpdate={handleStatusUpdate}
                       onCancel={handleCancel}
                       onPostConsultation={setPostConsultationApt}
+                      onRegisterPayment={setPaymentApt}
                     />
                   ))}
                 </div>
@@ -272,6 +275,7 @@ export function AgendaView({
                         onStatusUpdate={handleStatusUpdate}
                         onCancel={handleCancel}
                         onPostConsultation={setPostConsultationApt}
+                        onRegisterPayment={setPaymentApt}
                       />
                     ))}
                   </div>
@@ -314,6 +318,23 @@ export function AgendaView({
           }}
         />
       )}
+
+      {/* Record payment dialog */}
+      {paymentApt && (
+        <RecordPaymentDialog
+          open={!!paymentApt}
+          onClose={() => setPaymentApt(null)}
+          appointmentId={paymentApt.id}
+          patientId={paymentApt.patients?.id ?? paymentApt.patient_id}
+          patientName={paymentApt.patients?.name ?? 'Paciente sin asignar'}
+          suggestedAmount={(() => {
+            const fees = (professional.default_fees as Record<string, number> | null) ?? {}
+            const durMin = Math.round((new Date(paymentApt.end_at).getTime() - new Date(paymentApt.start_at).getTime()) / 60000)
+            return fees[String(durMin)] ?? fees[String(professional.appointment_duration)] ?? undefined
+          })()}
+          onRecorded={() => router.refresh()}
+        />
+      )}
     </div>
   )
 }
@@ -324,11 +345,13 @@ function TurnoCard({
   onStatusUpdate,
   onCancel,
   onPostConsultation,
+  onRegisterPayment,
 }: {
   appointment: AppointmentWithRelations
   onStatusUpdate: (id: string, status: AppointmentStatus) => void
   onCancel: (id: string, patientName: string) => void
   onPostConsultation: (apt: AppointmentWithRelations) => void
+  onRegisterPayment: (apt: AppointmentWithRelations) => void
 }) {
   const startTime = format(new Date(appointment.start_at), 'HH:mm')
   const endTime = format(new Date(appointment.end_at), 'HH:mm')
@@ -345,7 +368,8 @@ function TurnoCard({
   const showViewConsultation = status === 'completed'
   const showRegisterConsultation = (status === 'confirmed' || status === 'scheduled') &&
     isAppointmentPast(appointment.start_at)
-  const hasActions = showCompleted || showNoShow || showCancel || showReminder || showViewConsultation || showRegisterConsultation
+  const showRegisterPayment = status !== 'cancelled'
+  const hasActions = showCompleted || showNoShow || showCancel || showReminder || showViewConsultation || showRegisterConsultation || showRegisterPayment
 
   const handleSendReminder = async () => {
     try {
@@ -405,6 +429,12 @@ function TurnoCard({
                 <DropdownMenuItem onClick={handleSendReminder}>
                   <Bell className="mr-2 h-4 w-4" />
                   Enviar recordatorio
+                </DropdownMenuItem>
+              )}
+              {showRegisterPayment && (
+                <DropdownMenuItem onClick={() => onRegisterPayment(appointment)}>
+                  <DollarSign className="mr-2 h-4 w-4" />
+                  Registrar cobro
                 </DropdownMenuItem>
               )}
               {showCompleted && (
