@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { NotificationsPopover } from '@/components/app/notifications-popover'
+import { GlobalSearch } from '@/components/app/global-search'
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -68,6 +69,9 @@ export function SidebarNav({
         <NotificationsPopover initialCount={unreadNotifications} />
       </div>
       <Separator />
+      <div className="px-4 pt-4">
+        <GlobalSearch />
+      </div>
       <nav className="flex-1 space-y-1 p-4">
         {navItems.map((item) => {
           const Icon = item.icon
