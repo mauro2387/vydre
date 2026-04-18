@@ -39,7 +39,7 @@ import {
 } from '@/components/ui/command'
 import { ChevronsUpDown } from 'lucide-react'
 import { toast } from 'sonner'
-import { createAppointment } from '@/lib/actions/appointments'
+import { createAppointment, createRecurringAppointments } from '@/lib/actions/appointments'
 import { createPatient } from '@/lib/actions/patients'
 import { parseActionError } from '@/lib/utils/error-messages'
 import type { Patient, Professional, AppointmentWithRelations } from '@/lib/types/database.types'
@@ -94,6 +94,8 @@ export function NewAppointmentModal({
   const [openNewPatient, setOpenNewPatient] = useState(false)
   const [localPatients, setLocalPatients] = useState<Patient[]>(patients)
   const [patientPopoverOpen, setPatientPopoverOpen] = useState(false)
+  const [recurrenceRule, setRecurrenceRule] = useState<'none' | 'weekly' | 'biweekly' | 'monthly'>('none')
+  const [recurrenceCount, setRecurrenceCount] = useState(4)
 
   const todayStr = format(new Date(), 'yyyy-MM-dd')
 
@@ -181,15 +183,30 @@ export function NewAppointmentModal({
       const endDateTime = addMinutes(startDateTime, duration)
 
       const selectedPatient = localPatients.find(p => p.id === data.patient_id)
-      await createAppointment({
-        patient_id: data.patient_id,
-        start_at: startDateTime.toISOString(),
-        end_at: endDateTime.toISOString(),
-        notes: data.notes || undefined,
-      })
 
-      toast.success(`Turno creado para ${selectedPatient?.name ?? 'el paciente'}`)
+      if (recurrenceRule !== 'none') {
+        await createRecurringAppointments({
+          patient_id: data.patient_id,
+          start_at: startDateTime.toISOString(),
+          end_at: endDateTime.toISOString(),
+          notes: data.notes || undefined,
+          rule: recurrenceRule,
+          count: recurrenceCount,
+        })
+        toast.success(`${recurrenceCount} turnos recurrentes creados para ${selectedPatient?.name ?? 'el paciente'}`)
+      } else {
+        await createAppointment({
+          patient_id: data.patient_id,
+          start_at: startDateTime.toISOString(),
+          end_at: endDateTime.toISOString(),
+          notes: data.notes || undefined,
+        })
+        toast.success(`Turno creado para ${selectedPatient?.name ?? 'el paciente'}`)
+      }
+
       reset()
+      setRecurrenceRule('none')
+      setRecurrenceCount(4)
       onOpenChange(false)
       onSuccess?.()
       router.refresh()
@@ -322,6 +339,41 @@ export function NewAppointmentModal({
               />
               {errors.notes && (
                 <p className="text-sm text-destructive">{errors.notes.message}</p>
+              )}
+            </div>
+
+            {/* Recurrence */}
+            <div className="space-y-2">
+              <Label>Repetir turno</Label>
+              <Select value={recurrenceRule} onValueChange={(v) => setRecurrenceRule(v as typeof recurrenceRule)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No repetir</SelectItem>
+                  <SelectItem value="weekly">Semanal</SelectItem>
+                  <SelectItem value="biweekly">Quincenal</SelectItem>
+                  <SelectItem value="monthly">Mensual</SelectItem>
+                </SelectContent>
+              </Select>
+              {recurrenceRule !== 'none' && (
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="recurrence-count" className="shrink-0 text-sm">
+                    Cantidad:
+                  </Label>
+                  <Input
+                    id="recurrence-count"
+                    type="number"
+                    min={2}
+                    max={52}
+                    value={recurrenceCount}
+                    onChange={(e) => setRecurrenceCount(Math.max(2, Math.min(52, Number(e.target.value) || 2)))}
+                    className="w-20"
+                  />
+                  <span className="text-xs text-muted-foreground">
+                    turnos ({recurrenceRule === 'weekly' ? 'cada semana' : recurrenceRule === 'biweekly' ? 'cada 2 semanas' : 'cada mes'})
+                  </span>
+                </div>
               )}
             </div>
 

@@ -135,6 +135,9 @@ export type Database = {
           end_at: string
           status: string
           notes: string | null
+          recurrence_rule: string | null
+          recurrence_group_id: string | null
+          recurrence_index: number | null
           created_at: string
           updated_at: string
         }
@@ -146,6 +149,9 @@ export type Database = {
           end_at: string
           status?: string
           notes?: string | null
+          recurrence_rule?: string | null
+          recurrence_group_id?: string | null
+          recurrence_index?: number | null
           created_at?: string
           updated_at?: string
         }
@@ -157,6 +163,9 @@ export type Database = {
           end_at?: string
           status?: string
           notes?: string | null
+          recurrence_rule?: string | null
+          recurrence_group_id?: string | null
+          recurrence_index?: number | null
           created_at?: string
           updated_at?: string
         }

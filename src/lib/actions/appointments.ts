@@ -269,6 +269,68 @@ export async function createAppointment(data: {
   revalidatePath('/dashboard')
 }
 
+/**
+ * Creates N appointments at recurring intervals.
+ * rule: 'weekly' | 'biweekly' | 'monthly'
+ * count: number of occurrences (including the first)
+ */
+export async function createRecurringAppointments(data: {
+  patient_id: string
+  start_at: string
+  end_at: string
+  notes?: string
+  rule: 'weekly' | 'biweekly' | 'monthly'
+  count: number
+}) {
+  if (data.count < 2 || data.count > 52) throw new Error('La cantidad debe ser entre 2 y 52')
+
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  const { getProfessional } = await import('./professional')
+  const professional = await getProfessional()
+  if (!professional) throw new Error('Profesional no encontrado')
+
+  const groupId = crypto.randomUUID()
+  const startDate = new Date(data.start_at)
+  const endDate = new Date(data.end_at)
+  const durationMs = endDate.getTime() - startDate.getTime()
+
+  const rows = []
+  for (let i = 0; i < data.count; i++) {
+    const s = new Date(startDate)
+    if (data.rule === 'weekly') s.setDate(s.getDate() + i * 7)
+    else if (data.rule === 'biweekly') s.setDate(s.getDate() + i * 14)
+    else s.setMonth(s.getMonth() + i)
+
+    const e = new Date(s.getTime() + durationMs)
+
+    rows.push({
+      professional_id: professional.id,
+      patient_id: data.patient_id,
+      start_at: s.toISOString(),
+      end_at: e.toISOString(),
+      notes: data.notes ?? null,
+      status: 'scheduled' as const,
+      recurrence_rule: data.rule,
+      recurrence_group_id: groupId,
+      recurrence_index: i,
+    })
+  }
+
+  const { error } = await supabase.from('appointments').insert(rows)
+  if (error) {
+    if (error.code === '23P01') {
+      throw new Error('Algún turno recurrente colisiona con un turno existente. Revisá los horarios.')
+    }
+    throw new Error(error.message)
+  }
+
+  revalidatePath('/agenda')
+  revalidatePath('/dashboard')
+}
+
 export async function updateAppointmentStatus(
   appointmentId: string,
   status: AppointmentStatus
