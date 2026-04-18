@@ -519,6 +519,42 @@ export type Database = {
         }
         Relationships: []
       }
+      booking_pages: {
+        Row: {
+          id: string
+          professional_id: string
+          slug: string
+          active: boolean
+          title: string | null
+          description: string | null
+          min_advance_hours: number
+          max_advance_days: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          professional_id: string
+          slug: string
+          active?: boolean
+          title?: string | null
+          description?: string | null
+          min_advance_hours?: number
+          max_advance_days?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          professional_id?: string
+          slug?: string
+          active?: boolean
+          title?: string | null
+          description?: string | null
+          min_advance_hours?: number
+          max_advance_days?: number
+          created_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

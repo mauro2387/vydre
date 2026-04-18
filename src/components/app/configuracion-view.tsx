@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { User, Clock, Timer, Globe, Shield, Loader2, KeyRound, AlertTriangle, Mail, DollarSign } from 'lucide-react'
+import { User, Clock, Timer, Globe, Shield, Loader2, KeyRound, AlertTriangle, Mail, DollarSign, Link as LinkIcon, Copy, ExternalLink } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -31,6 +31,7 @@ import {
   signOutAllSessions,
 } from '@/lib/actions/professional'
 import { updateDefaultFees } from '@/lib/actions/payments'
+import { getBookingPage, upsertBookingPage, generateUniqueSlug } from '@/lib/actions/booking'
 import { parseActionError } from '@/lib/utils/error-messages'
 import { PasswordStrength } from '@/components/app/password-strength'
 import type { Professional } from '@/lib/types/database.types'
@@ -93,6 +94,8 @@ export function ConfiguracionView({
       <FeesSection professional={professional} />
       <Separator />
       <TimezoneSection professional={professional} />
+      <Separator />
+      <BookingSection professional={professional} />
       <Separator />
       <AccountSection
         userEmail={userEmail}
@@ -723,6 +726,173 @@ function DangerZoneSection() {
         <p className="text-xs text-muted-foreground">
           ¿Querés eliminar tu cuenta? Escribinos a contacto@vydre.com
         </p>
+      </CardContent>
+    </Card>
+  )
+}
+
+function BookingSection({ professional }: { professional: Professional }) {
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [active, setActive] = useState(false)
+  const [slug, setSlug] = useState('')
+  const [title, setTitle] = useState('')
+  const [description, setDescription] = useState('')
+  const [minAdvance, setMinAdvance] = useState(2)
+  const [maxDays, setMaxDays] = useState(30)
+  const [copied, setCopied] = useState(false)
+
+  useEffect(() => {
+    getBookingPage().then((page) => {
+      if (page) {
+        setActive(page.active)
+        setSlug(page.slug)
+        setTitle(page.title ?? '')
+        setDescription(page.description ?? '')
+        setMinAdvance(page.min_advance_hours)
+        setMaxDays(page.max_advance_days)
+      } else {
+        generateUniqueSlug(professional.name).then(setSlug)
+      }
+      setLoading(false)
+    })
+  }, [professional.name])
+
+  const bookingUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/reservar/${slug}`
+
+  const handleSave = async () => {
+    setSaving(true)
+    try {
+      await upsertBookingPage({
+        active,
+        slug,
+        title: title || undefined,
+        description: description || undefined,
+        min_advance_hours: minAdvance,
+        max_advance_days: maxDays,
+      })
+      toast.success('Configuración de reservas guardada')
+    } catch (err) {
+      toast.error(parseActionError(err))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(bookingUrl)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  if (loading) return null
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-base">
+          <LinkIcon className="h-4 w-4" />
+          Reservas online
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex items-center gap-3">
+          <Label>Activar reservas online</Label>
+          <input
+            type="checkbox"
+            checked={active}
+            onChange={(e) => setActive(e.target.checked)}
+            className="h-4 w-4"
+          />
+        </div>
+
+        {active && (
+          <>
+            <div className="flex items-center gap-2 rounded-md bg-secondary p-2 text-sm">
+              <span className="truncate text-muted-foreground">{bookingUrl}</span>
+              <Button variant="ghost" size="sm" onClick={handleCopy}>
+                <Copy className="h-3 w-3" />
+                {copied ? 'Copiado' : ''}
+              </Button>
+              <a href={bookingUrl} target="_blank" rel="noopener noreferrer">
+                <Button variant="ghost" size="sm">
+                  <ExternalLink className="h-3 w-3" />
+                </Button>
+              </a>
+            </div>
+
+            <div>
+              <Label htmlFor="booking-slug">Slug personalizado</Label>
+              <Input
+                id="booking-slug"
+                value={slug}
+                onChange={(e) => setSlug(e.target.value)}
+                className="mt-1"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="booking-title">Título de la página</Label>
+              <Input
+                id="booking-title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="mt-1"
+                placeholder={professional.name}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="booking-desc">Descripción</Label>
+              <Input
+                id="booking-desc"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="mt-1"
+                placeholder="Ej: Odontología general y estética"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Anticipación mínima</Label>
+                <Select
+                  value={String(minAdvance)}
+                  onValueChange={(v) => setMinAdvance(Number(v))}
+                >
+                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">1 hora</SelectItem>
+                    <SelectItem value="2">2 horas</SelectItem>
+                    <SelectItem value="4">4 horas</SelectItem>
+                    <SelectItem value="8">8 horas</SelectItem>
+                    <SelectItem value="24">24 horas</SelectItem>
+                    <SelectItem value="48">48 horas</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Horizonte máximo</Label>
+                <Select
+                  value={String(maxDays)}
+                  onValueChange={(v) => setMaxDays(Number(v))}
+                >
+                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="7">7 días</SelectItem>
+                    <SelectItem value="14">14 días</SelectItem>
+                    <SelectItem value="30">30 días</SelectItem>
+                    <SelectItem value="60">60 días</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </>
+        )}
+
+        <Button onClick={handleSave} disabled={saving} className="w-full">
+          {saving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Guardando...</> : 'Guardar configuración'}
+        </Button>
       </CardContent>
     </Card>
   )
