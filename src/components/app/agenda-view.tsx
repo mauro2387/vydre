@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
 import { format, addDays, isSameDay } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { ChevronLeft, ChevronRight, Plus, MoreVertical, Bell, FileText, ClipboardList, CalendarPlus } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Plus, MoreVertical, Bell, BellRing, FileText, ClipboardList, CalendarPlus } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -375,6 +375,14 @@ function TurnoCard({
           <p className="font-medium">{patientName}</p>
         </div>
         <AppointmentStatusBadge status={status} confirmation={confirmation} />
+        {appointment.appointment_confirmations?.reminder_sent_at && (
+          <span
+            className="inline-flex items-center gap-1 text-xs text-muted-foreground"
+            title={`Recordatorio enviado ${format(new Date(appointment.appointment_confirmations.reminder_sent_at), "d 'de' MMMM, HH:mm", { locale: es })}`}
+          >
+            <BellRing className="h-3.5 w-3.5" />
+          </span>
+        )}
         {hasActions && (
           <DropdownMenu>
             <DropdownMenuTrigger className="inline-flex h-8 w-8 items-center justify-center rounded-md hover:bg-accent hover:text-accent-foreground">

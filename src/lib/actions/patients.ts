@@ -30,11 +30,59 @@ export async function getPatients(search?: string): Promise<Patient[]> {
     .select('*')
     .eq('professional_id', professional.id)
     .order('name', { ascending: true })
+    .limit(1000)
 
   const { data, error } = await query
 
   if (error) return []
   return data
+}
+
+/**
+ * Paginated variant of getPatients for the patient-list sidebar.
+ * Returns a slice of `pageSize` starting at `page` (1-based) plus a
+ * `hasMore` flag derived from an over-fetch-by-one pattern.
+ */
+export async function getPatientsPaginated(options: {
+  search?: string
+  page?: number
+  pageSize?: number
+}): Promise<{ patients: Patient[]; hasMore: boolean; page: number }> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  const professional = await getProfessional()
+  if (!professional) return { patients: [], hasMore: false, page: 1 }
+
+  const page = Math.max(1, options.page ?? 1)
+  const pageSize = Math.min(200, Math.max(10, options.pageSize ?? 50))
+
+  // For searches we still use the RPC (small result sets, no pagination yet).
+  if (options.search) {
+    const { data, error } = await supabase.rpc('search_patients', {
+      prof_id: professional.id,
+      search_term: options.search,
+    })
+    if (error) return { patients: [], hasMore: false, page }
+    return { patients: data, hasMore: false, page }
+  }
+
+  // Over-fetch by 1 to detect whether a next page exists without a COUNT(*).
+  const from = (page - 1) * pageSize
+  const to = from + pageSize // inclusive → fetches pageSize + 1 rows
+
+  const { data, error } = await supabase
+    .from('patients')
+    .select('*')
+    .eq('professional_id', professional.id)
+    .order('name', { ascending: true })
+    .range(from, to)
+
+  if (error) return { patients: [], hasMore: false, page }
+
+  const hasMore = data.length > pageSize
+  return { patients: hasMore ? data.slice(0, pageSize) : data, hasMore, page }
 }
 
 export async function getPatientDetail(patientId: string): Promise<PatientDetail | null> {

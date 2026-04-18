@@ -1,4 +1,4 @@
-import { getPatients, getPatientDetail } from '@/lib/actions/patients'
+import { getPatientsPaginated, getPatientDetail } from '@/lib/actions/patients'
 import { getPatientClinicalRecord } from '@/lib/actions/clinical'
 import { PatientList } from '@/components/app/patient-list'
 import { PatientDetailView } from '@/components/app/patient-detail'
@@ -8,14 +8,15 @@ import { Users } from 'lucide-react'
 export default async function PacientesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; id?: string }>
+  searchParams: Promise<{ q?: string; id?: string; page?: string }>
 }) {
   const params = await searchParams
   const q = params.q
   const selectedId = params.id
+  const page = Math.max(1, Number(params.page) || 1)
 
-  const [patients, patientDetail, clinicalRecord] = await Promise.all([
-    getPatients(q),
+  const [{ patients, hasMore }, patientDetail, clinicalRecord] = await Promise.all([
+    getPatientsPaginated({ search: q, page }),
     selectedId ? getPatientDetail(selectedId) : Promise.resolve(null),
     selectedId ? getPatientClinicalRecord(selectedId) : Promise.resolve(null),
   ])
@@ -28,6 +29,8 @@ export default async function PacientesPage({
           patients={patients}
           selectedId={selectedId}
           searchQuery={q}
+          page={page}
+          hasMore={hasMore}
         />
       }
       detailSlot={

@@ -517,7 +517,7 @@ export type AppointmentWithRelations = Appointment & {
   patients: Pick<Patient, 'id' | 'name' | 'phone' | 'email'> | null
   appointment_confirmations: Pick<
     AppointmentConfirmation,
-    'response' | 'responded_at'
+    'response' | 'responded_at' | 'reminder_sent_at'
   > | null
   clinical_entries: Pick<ClinicalEntry, 'id'>[] | null
 }

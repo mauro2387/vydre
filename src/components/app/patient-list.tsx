@@ -36,10 +36,14 @@ export function PatientList({
   patients,
   selectedId,
   searchQuery,
+  page = 1,
+  hasMore = false,
 }: {
   patients: Patient[]
   selectedId: string | undefined
   searchQuery: string | undefined
+  page?: number
+  hasMore?: boolean
 }) {
   const router = useRouter()
   const [value, setValue] = useState(searchQuery ?? '')
@@ -158,6 +162,23 @@ export function PatientList({
               </div>
             </button>
           ))}
+          {hasMore && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full"
+              onClick={() => {
+                const next = page + 1
+                const params = new URLSearchParams()
+                if (value) params.set('q', value)
+                if (selectedId) params.set('id', selectedId)
+                params.set('page', String(next))
+                router.push(`/pacientes?${params.toString()}`)
+              }}
+            >
+              Cargar más pacientes
+            </Button>
+          )}
         </div>
       )}
 
