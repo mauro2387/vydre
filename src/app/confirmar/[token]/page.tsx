@@ -28,6 +28,7 @@ export default async function ConfirmarPage({
       id,
       appointment_id,
       response,
+      expires_at,
       appointments (
         id,
         start_at,
@@ -51,6 +52,23 @@ export default async function ConfirmarPage({
     )
   }
 
+  // Expired token
+  if (
+    (confirmation as { expires_at?: string | null }).expires_at &&
+    new Date((confirmation as { expires_at: string }).expires_at) < new Date()
+  ) {
+    return (
+      <PageWrapper>
+        <AlertTriangle className="mx-auto mb-4 h-12 w-12 text-yellow-500" />
+        <h1 className="text-xl font-bold text-gray-900">Este link expiró</h1>
+        <p className="mt-2 text-gray-600">
+          Por seguridad los links de confirmación son válidos por tiempo limitado.
+          Contactá al consultorio para confirmar tu turno.
+        </p>
+      </PageWrapper>
+    )
+  }
+
   const appointment = confirmation.appointments as unknown as {
     id: string
     start_at: string
@@ -58,7 +76,20 @@ export default async function ConfirmarPage({
     professionals: { name: string; specialty: string } | null
   } | null
 
-  const DEFAULT_TZ = 'America/Argentina/Buenos_Aires'
+  // Block if appointment is in the past (extra defence-in-depth)
+  if (appointment && new Date(appointment.start_at) < new Date()) {
+    return (
+      <PageWrapper>
+        <AlertTriangle className="mx-auto mb-4 h-12 w-12 text-yellow-500" />
+        <h1 className="text-xl font-bold text-gray-900">Turno ya ocurrió</h1>
+        <p className="mt-2 text-gray-600">
+          Este turno ya pasó. Si necesitás coordinar otro, contactá al consultorio.
+        </p>
+      </PageWrapper>
+    )
+  }
+
+  const { DEFAULT_TZ } = await import('@/lib/utils')
   const appointmentDate = appointment
     ? formatInTimezone(new Date(appointment.start_at), DEFAULT_TZ, {
         weekday: 'long', day: 'numeric', month: 'long',

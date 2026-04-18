@@ -8,10 +8,8 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { AppointmentStatusBadge } from '@/components/app/appointment-status-badge'
 import { ActivationBanner } from '@/components/app/activation-banner'
-import { nowInTimezone, formatInTimezone } from '@/lib/utils'
+import { nowInTimezone, formatInTimezone, DEFAULT_TZ } from '@/lib/utils'
 import type { AppointmentStatus, Professional } from '@/lib/types/database.types'
-
-const DEFAULT_TZ = 'America/Argentina/Buenos_Aires'
 
 export default async function DashboardPage() {
   const [todayAppointments, unconfirmed, professional, recentActivity] = await Promise.all([

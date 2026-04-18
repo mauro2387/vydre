@@ -22,7 +22,8 @@ export default async function AgendaPage({
   const professional = await getProfessional()
   if (!professional) redirect('/onboarding')
 
-  const tz = professional.timezone ?? 'America/Argentina/Buenos_Aires'
+  const { DEFAULT_TZ } = await import('@/lib/utils')
+  const tz = professional.timezone ?? DEFAULT_TZ
   const weekStart = params.semana ?? getMondayOfWeek(todayInTimezone(tz))
 
   const [appointments, patients] = await Promise.all([

@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { getProfessional, checkActivationComplete } from './professional'
+import { createPatientSchema, updatePatientSchema, parseOrThrow } from '@/lib/validation/schemas'
 import type { Patient, PatientDetail } from '@/lib/types/database.types'
 
 export async function getPatients(search?: string): Promise<Patient[]> {
@@ -55,12 +56,14 @@ export async function getPatientDetail(patientId: string): Promise<PatientDetail
         status,
         notes,
         appointment_confirmations (response),
-        consultation_notes (
+        clinical_entries (
           id,
-          reason,
-          treatment,
-          observations,
-          generated_summaries (id, content, edited_content, sent_at)
+          chief_complaint,
+          treatment_plan,
+          indications,
+          diagnosis,
+          ai_summary,
+          ai_summary_sent_at
         )
       )
     `)
@@ -93,15 +96,19 @@ export async function createPatient(formData: {
   const professional = await getProfessional()
   if (!professional) throw new Error('Profesional no encontrado')
 
-  const { error } = await supabase
+  const parsed = parseOrThrow(createPatientSchema, formData)
+
+  const { data, error } = await supabase
     .from('patients')
     .insert({
       professional_id: professional.id,
-      name: formData.name,
-      phone: formData.phone,
-      email: formData.email ?? null,
-      notes: formData.notes ?? null,
+      name: parsed.name,
+      phone: parsed.phone,
+      email: parsed.email ?? null,
+      notes: parsed.notes ?? null,
     })
+    .select()
+    .single()
 
   if (error) throw new Error(error.message)
 
@@ -117,6 +124,8 @@ export async function createPatient(formData: {
   revalidatePath('/pacientes')
   revalidatePath('/agenda')
   revalidatePath('/bienvenida')
+
+  return data as Patient
 }
 
 export async function updatePatient(
@@ -135,13 +144,15 @@ export async function updatePatient(
   const professional = await getProfessional()
   if (!professional) throw new Error('Profesional no encontrado')
 
+  const parsed = parseOrThrow(updatePatientSchema, formData)
+
   const { error } = await supabase
     .from('patients')
     .update({
-      name: formData.name,
-      phone: formData.phone,
-      email: formData.email ?? null,
-      notes: formData.notes ?? null,
+      name: parsed.name,
+      phone: parsed.phone,
+      email: parsed.email ?? null,
+      notes: parsed.notes ?? null,
     })
     .eq('id', patientId)
     .eq('professional_id', professional.id)

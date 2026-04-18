@@ -3,10 +3,14 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
-import { todayInTimezone, dayBoundsUTC } from '@/lib/utils'
+import { todayInTimezone, dayBoundsUTC, DEFAULT_TZ } from '@/lib/utils'
+import {
+  createAppointmentSchema,
+  appointmentStatusSchema,
+  uuidSchema,
+  parseOrThrow,
+} from '@/lib/validation/schemas'
 import type { AppointmentWithRelations, AppointmentStatus } from '@/lib/types/database.types'
-
-const DEFAULT_TZ = 'America/Argentina/Buenos_Aires'
 
 export async function getTodayAppointments(): Promise<AppointmentWithRelations[]> {
   const supabase = await createClient()
@@ -134,16 +138,20 @@ export async function createAppointment(data: {
   const professional = await getProfessional()
   if (!professional) throw new Error('Profesional no encontrado')
 
-  const { error } = await supabase
+  const parsed = parseOrThrow(createAppointmentSchema, data)
+
+  const { data: inserted, error } = await supabase
     .from('appointments')
     .insert({
       professional_id: professional.id,
-      patient_id: data.patient_id,
-      start_at: data.start_at,
-      end_at: data.end_at,
-      notes: data.notes ?? null,
+      patient_id: parsed.patient_id,
+      start_at: parsed.start_at,
+      end_at: parsed.end_at,
+      notes: parsed.notes ?? null,
       status: 'scheduled',
     })
+    .select('id')
+    .single()
 
   if (error) {
     if (error.code === '23P01') {
@@ -162,6 +170,101 @@ export async function createAppointment(data: {
   const { checkActivationComplete } = await import('./professional')
   await checkActivationComplete()
 
+  // Auto-send reminder email to patient
+  try {
+    const { data: patient } = await supabase
+      .from('patients')
+      .select('name, email')
+      .eq('id', parsed.patient_id)
+      .single()
+
+    if (patient?.email) {
+      // Create confirmation token (upsert to survive retries)
+      const { data: conf } = await supabase
+        .from('appointment_confirmations')
+        .upsert(
+          { appointment_id: inserted.id },
+          { onConflict: 'appointment_id', ignoreDuplicates: false },
+        )
+        .select('token')
+        .single()
+
+      if (conf) {
+        const { sendReminderEmail } = await import('@/lib/email')
+        const { formatInTimezone } = await import('@/lib/utils')
+        const tz = professional.timezone ?? DEFAULT_TZ
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
+
+        const dateFormatted = formatInTimezone(
+          new Date(parsed.start_at), tz,
+          { weekday: 'long', day: 'numeric', month: 'long' }
+        )
+        const timeFormatted = formatInTimezone(
+          new Date(parsed.start_at), tz,
+          { hour: '2-digit', minute: '2-digit', hour12: false }
+        )
+
+        // Log message as pending (audit trail)
+        const { data: msg } = await supabase
+          .from('messages')
+          .insert({
+            appointment_id: inserted.id,
+            professional_id: professional.id,
+            type: 'reminder',
+            channel: 'email',
+            status: 'pending',
+            recipient: patient.email,
+          })
+          .select('id')
+          .single()
+
+        try {
+          await sendReminderEmail({
+            to: patient.email,
+            patientName: patient.name,
+            professionalName: professional.name,
+            specialty: professional.specialty,
+            appointmentDate: dateFormatted.charAt(0).toUpperCase() + dateFormatted.slice(1),
+            appointmentTime: timeFormatted,
+            confirmUrl: `${appUrl}/confirmar/${conf.token}?r=si`,
+            declineUrl: `${appUrl}/confirmar/${conf.token}?r=no`,
+          })
+
+          await supabase
+            .from('appointment_confirmations')
+            .update({ reminder_sent_at: new Date().toISOString() })
+            .eq('appointment_id', inserted.id)
+
+          if (msg?.id) {
+            await supabase
+              .from('messages')
+              .update({ status: 'sent', sent_at: new Date().toISOString() })
+              .eq('id', msg.id)
+          }
+
+          // Track first reminder
+          await supabase
+            .from('professionals')
+            .update({ first_reminder_sent: true })
+            .eq('id', professional.id)
+            .eq('first_reminder_sent', false)
+        } catch (sendErr) {
+          if (msg?.id) {
+            const errMsg = sendErr instanceof Error ? sendErr.message : 'unknown'
+            await supabase
+              .from('messages')
+              .update({ status: 'failed', error: errMsg })
+              .eq('id', msg.id)
+          }
+          throw sendErr
+        }
+      }
+    }
+  } catch (emailError) {
+    // Non-blocking: appointment was created successfully even if email failed.
+    console.error('[auto-reminder] send failed for appointment', inserted.id, emailError)
+  }
+
   revalidatePath('/agenda')
   revalidatePath('/dashboard')
 }
@@ -178,10 +281,13 @@ export async function updateAppointmentStatus(
   const professional = await getProfessional()
   if (!professional) throw new Error('Profesional no encontrado')
 
+  const id = parseOrThrow(uuidSchema, appointmentId)
+  const s = parseOrThrow(appointmentStatusSchema, status)
+
   const { error } = await supabase
     .from('appointments')
-    .update({ status })
-    .eq('id', appointmentId)
+    .update({ status: s })
+    .eq('id', id)
     .eq('professional_id', professional.id)
 
   if (error) throw new Error(error.message)

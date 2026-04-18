@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useForm, useFieldArray } from 'react-hook-form'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { RefreshCw, Send, Loader2, Plus, Trash2 } from 'lucide-react'
+import { RefreshCw, Send, Loader2, Plus, Trash2, MessageCircle } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -56,6 +56,7 @@ export function ClinicalEntryModal({
 
   const patientName = appointment.patients?.name ?? 'Paciente'
   const patientEmail = appointment.patients?.email ?? null
+  const patientPhone = appointment.patients?.phone ?? null
   const patientId = appointment.patients?.id ?? ''
   const dateStr = format(new Date(appointment.start_at), "EEEE d 'de' MMMM", { locale: es })
   const formattedDate = dateStr.charAt(0).toUpperCase() + dateStr.slice(1)
@@ -109,6 +110,19 @@ export function ClinicalEntryModal({
       setEditedSummary(summary)
       setGeneratingAI(false)
       toast.success('Resumen generado')
+
+      // Auto-send email if patient has email
+      if (patientEmail) {
+        try {
+          await sendClinicalSummary(entry.id)
+          setSent(true)
+          toast.success(`Resumen enviado automáticamente a ${patientEmail}`)
+        } catch {
+          // Non-blocking — user can still send manually
+          toast.info('No se pudo enviar automáticamente. Podés enviarlo manualmente.')
+        }
+      }
+
       setVista('summary')
     } catch (error) {
       toast.error(parseActionError(error))
@@ -167,7 +181,7 @@ export function ClinicalEntryModal({
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) onClose() }}>
-      <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto">
+      <DialogContent className="max-h-[calc(100dvh-32px)] max-w-lg overflow-y-auto">
         {vista === 'form' ? (
           <>
             <DialogHeader>
@@ -326,7 +340,9 @@ export function ClinicalEntryModal({
             <DialogHeader>
               <DialogTitle>Resumen para el paciente</DialogTitle>
               <DialogDescription>
-                Generado con IA · Podés editarlo antes de enviar
+                {sent
+                  ? `Resumen enviado a ${patientEmail} · Podés reenviarlo o editarlo`
+                  : 'Generado con IA · Podés editarlo antes de enviar'}
               </DialogDescription>
             </DialogHeader>
 
@@ -369,8 +385,9 @@ export function ClinicalEntryModal({
 
                   <Button
                     size="sm"
+                    variant={sent ? 'outline' : 'default'}
                     onClick={handleSend}
-                    disabled={!patientEmail || sending || sent}
+                    disabled={!patientEmail || sending}
                     title={!patientEmail ? 'El paciente no tiene email registrado' : undefined}
                   >
                     {sending ? (
@@ -381,10 +398,28 @@ export function ClinicalEntryModal({
                     ) : (
                       <>
                         <Send className="mr-2 h-4 w-4" />
-                        Enviar al paciente
+                        {sent ? 'Volver a notificar' : 'Enviar al paciente'}
                       </>
                     )}
                   </Button>
+
+                  {patientPhone && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        const cleanPhone = patientPhone.replace(/\D/g, '')
+                        const phoneWithCountry = cleanPhone.startsWith('598') ? cleanPhone : `598${cleanPhone}`
+                        const message = editedSummary
+                          ? `Hola ${patientName.split(' ')[0]}, te envío el resumen de tu consulta:\n\n${editedSummary}`
+                          : `Hola ${patientName.split(' ')[0]}, te contacto respecto a tu última consulta.`
+                        window.open(`https://wa.me/${phoneWithCountry}?text=${encodeURIComponent(message)}`, '_blank')
+                      }}
+                    >
+                      <MessageCircle className="mr-2 h-4 w-4" />
+                      WhatsApp
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>

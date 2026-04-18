@@ -526,8 +526,9 @@ export type AppointmentWithRelations = Appointment & {
 export type PatientDetail = Patient & {
   appointments: (Appointment & {
     appointment_confirmations: Pick<AppointmentConfirmation, 'response'> | null
-    consultation_notes: (ConsultationNote & {
-      generated_summaries: GeneratedSummary | null
-    }) | null
+    clinical_entries: Pick<
+      ClinicalEntry,
+      'id' | 'chief_complaint' | 'treatment_plan' | 'indications' | 'diagnosis' | 'ai_summary' | 'ai_summary_sent_at'
+    > | null
   })[]
 }

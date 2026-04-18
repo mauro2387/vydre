@@ -42,7 +42,7 @@ import { toast } from 'sonner'
 import { createAppointment } from '@/lib/actions/appointments'
 import { createPatient } from '@/lib/actions/patients'
 import { parseActionError } from '@/lib/utils/error-messages'
-import type { Patient, Professional } from '@/lib/types/database.types'
+import type { Patient, Professional, AppointmentWithRelations } from '@/lib/types/database.types'
 
 // Schemas
 const appointmentSchema = z.object({
@@ -78,12 +78,14 @@ export function NewAppointmentModal({
   onOpenChange,
   patients,
   professional,
+  existingAppointments,
   onSuccess,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   patients: Patient[]
   professional: Professional
+  existingAppointments?: AppointmentWithRelations[]
   onSuccess?: () => void
 }) {
   const router = useRouter()
@@ -154,6 +156,21 @@ export function NewAppointmentModal({
 
   const timeSlots = generateTimeSlots()
 
+  // Compute occupied slots for the selected date
+  const occupiedSlots = new Set<string>()
+  if (existingAppointments && selectedDate) {
+    existingAppointments
+      .filter(a => a.status !== 'cancelled')
+      .forEach(a => {
+        const start = new Date(a.start_at)
+        const aptDate = format(start, 'yyyy-MM-dd')
+        if (aptDate === selectedDate) {
+          const time = `${start.getHours().toString().padStart(2, '0')}:${start.getMinutes().toString().padStart(2, '0')}`
+          occupiedSlots.add(time)
+        }
+      })
+  }
+
   const onSubmit = async (data: AppointmentForm) => {
     setServerError(null)
     setLoading(true)
@@ -194,7 +211,7 @@ export function NewAppointmentModal({
   return (
     <>
       <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="max-h-[calc(100dvh-32px)] overflow-y-auto sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Nuevo turno</DialogTitle>
           </DialogHeader>
@@ -203,78 +220,51 @@ export function NewAppointmentModal({
             {/* Patient select */}
             <div className="space-y-2">
               <Label>Paciente</Label>
-              {localPatients.length > 20 ? (
-                <Popover open={patientPopoverOpen} onOpenChange={setPatientPopoverOpen}>
-                  <PopoverTrigger
-                    className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm text-muted-foreground hover:bg-accent"
-                  >
-                    <span className={watch('patient_id') ? 'text-foreground' : ''}>
-                      {watch('patient_id')
-                        ? localPatients.find(p => p.id === watch('patient_id'))?.name ?? 'Seleccionar paciente...'
-                        : 'Seleccionar paciente...'}
-                    </span>
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                  </PopoverTrigger>
-                  <PopoverContent className="p-0" align="start">
-                    <Command>
-                      <CommandInput placeholder="Buscar paciente..." />
-                      <CommandList>
-                        <CommandEmpty>Sin resultados</CommandEmpty>
-                        <CommandGroup>
-                          {localPatients.map((p) => (
-                            <CommandItem
-                              key={p.id}
-                              value={p.name}
-                              data-checked={watch('patient_id') === p.id}
-                              onSelect={() => {
-                                setValue('patient_id', p.id, { shouldValidate: true })
-                                setPatientPopoverOpen(false)
-                              }}
-                            >
-                              {p.name}
-                            </CommandItem>
-                          ))}
+              <Popover open={patientPopoverOpen} onOpenChange={setPatientPopoverOpen}>
+                <PopoverTrigger
+                  className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm text-muted-foreground hover:bg-accent"
+                >
+                  <span className={watch('patient_id') ? 'text-foreground' : ''}>
+                    {watch('patient_id')
+                      ? localPatients.find(p => p.id === watch('patient_id'))?.name ?? 'Seleccionar paciente...'
+                      : 'Seleccionar paciente...'}
+                  </span>
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </PopoverTrigger>
+                <PopoverContent className="p-0" align="start">
+                  <Command>
+                    <CommandInput placeholder="Buscar paciente..." />
+                    <CommandList>
+                      <CommandEmpty>Sin resultados</CommandEmpty>
+                      <CommandGroup>
+                        <CommandItem
+                          value="__nuevo_paciente__"
+                          onSelect={() => {
+                            setOpenNewPatient(true)
+                            setPatientPopoverOpen(false)
+                          }}
+                          className="text-primary font-medium"
+                        >
+                          + Nuevo paciente
+                        </CommandItem>
+                        {localPatients.map((p) => (
                           <CommandItem
-                            value="__nuevo_paciente__"
+                            key={p.id}
+                            value={p.name}
+                            data-checked={watch('patient_id') === p.id}
                             onSelect={() => {
-                              setOpenNewPatient(true)
+                              setValue('patient_id', p.id, { shouldValidate: true })
                               setPatientPopoverOpen(false)
                             }}
-                            className="text-primary font-medium"
                           >
-                            + Nuevo paciente
+                            {p.name}
                           </CommandItem>
-                        </CommandGroup>
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
-              ) : (
-                <Select
-                  value={watch('patient_id') || undefined}
-                  onValueChange={(val) => {
-                    if (val === '__new__') {
-                      setOpenNewPatient(true)
-                    } else if (val) {
-                      setValue('patient_id', val as string, { shouldValidate: true })
-                    }
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar paciente..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {localPatients.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>
-                        {p.name}
-                      </SelectItem>
-                    ))}
-                    <SelectItem value="__new__" className="text-primary font-medium">
-                      + Nuevo paciente
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              )}
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
               {errors.patient_id && (
                 <p className="text-sm text-destructive">{errors.patient_id.message}</p>
               )}
@@ -300,7 +290,7 @@ export function NewAppointmentModal({
                 <p className="text-sm text-muted-foreground">No atendés este día</p>
               ) : (
                 <Select
-                  value={watch('start_time') || undefined}
+                  value={watch('start_time') || null}
                   onValueChange={(val) => {
                     if (val) setValue('start_time', val as string, { shouldValidate: true })
                   }}
@@ -310,8 +300,8 @@ export function NewAppointmentModal({
                   </SelectTrigger>
                   <SelectContent>
                     {timeSlots.map((slot) => (
-                      <SelectItem key={slot} value={slot}>
-                        {slot}
+                      <SelectItem key={slot} value={slot} disabled={occupiedSlots.has(slot)}>
+                        {slot}{occupiedSlots.has(slot) ? ' — Ocupado' : ''}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -398,39 +388,15 @@ function NewPatientDialog({
     setLoading(true)
 
     try {
-      await createPatient({
+      const newPatient = await createPatient({
         name: data.name,
         phone: data.phone,
         email: data.email || undefined,
       })
 
-      // Create a temporary patient object for the local state
-      // The actual ID will come from the server on next refresh
-      const tempPatient: Patient = {
-        id: crypto.randomUUID(),
-        professional_id: '',
-        name: data.name,
-        phone: data.phone,
-        email: data.email || null,
-        dob: null,
-        notes: null,
-        blood_type: null,
-        allergies: null,
-        chronic_conditions: null,
-        current_medications: null,
-        emergency_contact_name: null,
-        emergency_contact_phone: null,
-        insurance_provider: null,
-        insurance_number: null,
-        occupation: null,
-        clinical_notes: null,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      }
-
       toast.success(`Paciente ${data.name} agregado`)
       reset()
-      onCreated(tempPatient)
+      onCreated(newPatient)
     } catch (error) {
       setServerError(parseActionError(error))
     } finally {
@@ -448,7 +414,7 @@ function NewPatientDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-sm">
+      <DialogContent className="max-h-[calc(100dvh-32px)] overflow-y-auto sm:max-w-sm">
         <DialogHeader>
           <DialogTitle>Nuevo paciente</DialogTitle>
         </DialogHeader>

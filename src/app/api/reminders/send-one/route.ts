@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
     if (!conf) {
       const { data: newConf, error: confError } = await supabase
         .from('appointment_confirmations')
-        .insert({ appointment_id: apt.id })
+        .upsert({ appointment_id: apt.id }, { onConflict: 'appointment_id' })
         .select('token')
         .single()
 
@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
     }
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
-    const DEFAULT_TZ = 'America/Argentina/Buenos_Aires'
+    const { DEFAULT_TZ } = await import('@/lib/utils')
     const appointmentDate = formatInTimezone(
       new Date(apt.start_at),
       DEFAULT_TZ,

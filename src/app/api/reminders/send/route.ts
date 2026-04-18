@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     const supabase = getServiceClient()
 
     // Use Argentina/Uruguay timezone for date boundaries
-    const DEFAULT_TZ = 'America/Argentina/Buenos_Aires'
+    const { DEFAULT_TZ } = await import('@/lib/utils')
     const todayStr = todayInTimezone(DEFAULT_TZ)
     const tomorrowDate = new Date(todayStr + 'T12:00:00')
     tomorrowDate.setDate(tomorrowDate.getDate() + 1)

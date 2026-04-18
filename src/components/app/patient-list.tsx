@@ -88,7 +88,7 @@ export function PatientList({
         phone: data.phone,
         email: data.email || undefined,
       })
-      toast.success(`Paciente ${data.name} agregado`)
+      toast.success('Paciente agregado')
       reset()
       setOpenNewPatient(false)
       router.refresh()
@@ -163,7 +163,7 @@ export function PatientList({
 
       {/* New patient dialog */}
       <Dialog open={openNewPatient} onOpenChange={(o) => { if (!o) { reset(); setServerError(null) }; setOpenNewPatient(o) }}>
-        <DialogContent className="sm:max-w-sm">
+        <DialogContent className="max-h-[calc(100dvh-32px)] overflow-y-auto sm:max-w-sm">
           <DialogHeader>
             <DialogTitle>Nuevo paciente</DialogTitle>
           </DialogHeader>

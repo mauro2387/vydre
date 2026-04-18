@@ -93,7 +93,7 @@ export function EditPatientModal({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="max-h-[calc(100dvh-32px)] overflow-y-auto sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Editar paciente</DialogTitle>
         </DialogHeader>

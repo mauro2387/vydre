@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { LayoutDashboard, CalendarDays, Users, Settings, LogOut } from 'lucide-react'
+import { LayoutDashboard, CalendarDays, Users, ClipboardList, Settings, LogOut } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -13,6 +13,7 @@ const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/agenda', label: 'Agenda', icon: CalendarDays },
   { href: '/pacientes', label: 'Pacientes', icon: Users },
+  { href: '/consultas', label: 'Consultas', icon: ClipboardList },
   { href: '/configuracion', label: 'Configuración', icon: Settings },
 ]
 

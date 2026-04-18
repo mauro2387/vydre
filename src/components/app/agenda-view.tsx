@@ -300,6 +300,7 @@ export function AgendaView({
         onOpenChange={setOpenNewAppointment}
         patients={patients}
         professional={professional}
+        existingAppointments={appointments}
       />
 
       {/* Clinical entry modal */}
