@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { getProfessional } from '@/lib/actions/professional'
 import { revalidatePath } from 'next/cache'
+import { sendIntakeFormEmail } from '@/lib/email'
 import type { IntakeFormField } from '@/lib/types/database.types'
 
 const DEFAULT_TEMPLATES: { name: string; specialty: string | null; fields: IntakeFormField[] }[] = [
@@ -106,8 +107,23 @@ export async function sendIntakeForm(input: {
     .single()
 
   if (patient?.email) {
-    // TODO: Send email with form link
-    // For now, return the token/URL
+    const { data: template } = await supabase
+      .from('intake_form_templates')
+      .select('name')
+      .eq('id', input.templateId)
+      .single()
+
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://vydre.com'
+    const formUrl = `${baseUrl}/formulario/${response.token}`
+
+    sendIntakeFormEmail({
+      to: patient.email,
+      patientName: patient.name,
+      professionalName: professional.name,
+      specialty: professional.specialty ?? '',
+      formUrl,
+      templateName: template?.name ?? 'Pre-consulta',
+    }).catch((err) => console.error('[IntakeEmail] error:', err))
   }
 
   revalidatePath('/agenda')

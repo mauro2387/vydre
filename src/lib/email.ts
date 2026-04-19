@@ -3,6 +3,8 @@ import { render } from '@react-email/render'
 import { ReminderEmail } from '@/emails/reminder-email'
 import { SummaryEmail } from '@/emails/summary-email'
 import { WaitlistWelcomeEmail } from '@/emails/waitlist-welcome-email'
+import { BookingConfirmationEmail } from '@/emails/booking-confirmation-email'
+import { IntakeFormEmail } from '@/emails/intake-form-email'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
@@ -14,7 +16,7 @@ type SendInput = {
   to: string
   subject: string
   html: string
-  category: 'reminder' | 'summary' | 'waitlist' | 'system'
+  category: 'reminder' | 'summary' | 'waitlist' | 'booking' | 'intake' | 'system'
 }
 
 function sleep(ms: number) {
@@ -130,5 +132,53 @@ export async function sendWaitlistWelcomeEmail(params: {
     subject: '¡Estás en la lista de Vydre!',
     html,
     category: 'waitlist',
+  })
+}
+
+export async function sendBookingConfirmationEmail(params: {
+  to: string
+  patientName: string
+  professionalName: string
+  specialty: string
+  appointmentDate: string
+  appointmentTime: string
+}) {
+  const html = await render(BookingConfirmationEmail({
+    patientName: params.patientName,
+    professionalName: params.professionalName,
+    specialty: params.specialty,
+    appointmentDate: params.appointmentDate,
+    appointmentTime: params.appointmentTime,
+  }))
+
+  return sendWithRetry({
+    to: params.to,
+    subject: `Turno confirmado: ${params.appointmentDate} a las ${params.appointmentTime}`,
+    html,
+    category: 'booking',
+  })
+}
+
+export async function sendIntakeFormEmail(params: {
+  to: string
+  patientName: string
+  professionalName: string
+  specialty: string
+  formUrl: string
+  templateName: string
+}) {
+  const html = await render(IntakeFormEmail({
+    patientName: params.patientName,
+    professionalName: params.professionalName,
+    specialty: params.specialty,
+    formUrl: params.formUrl,
+    templateName: params.templateName,
+  }))
+
+  return sendWithRetry({
+    to: params.to,
+    subject: `${params.professionalName} te envió un formulario pre-consulta`,
+    html,
+    category: 'intake',
   })
 }

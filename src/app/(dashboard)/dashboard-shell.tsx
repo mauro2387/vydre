@@ -1,10 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { usePathname } from 'next/navigation'
+import { useState, useEffect, useCallback } from 'react'
+import { usePathname, useRouter } from 'next/navigation'
 import { Menu } from 'lucide-react'
 import { Toaster } from 'sonner'
 import { SidebarNav } from './sidebar-nav'
+import { useKeyboardShortcuts } from '@/lib/hooks/use-keyboard-shortcuts'
+import { KeyboardShortcutsDialog } from '@/components/app/keyboard-shortcuts-dialog'
 
 export function DashboardShell({
   professionalName,
@@ -18,7 +20,24 @@ export function DashboardShell({
   children: React.ReactNode
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [shortcutsOpen, setShortcutsOpen] = useState(false)
   const pathname = usePathname()
+  const router = useRouter()
+
+  useKeyboardShortcuts({
+    onNewAppointment: useCallback(() => {
+      // Dispatch a custom event that agenda-view listens for
+      window.dispatchEvent(new CustomEvent('vydre:new-appointment'))
+    }, []),
+    onFocusPatientSearch: useCallback(() => {
+      // Focus the search input on the patients page
+      const searchInput = document.querySelector<HTMLInputElement>('[data-patient-search]')
+      searchInput?.focus()
+    }, []),
+    onToggleShortcuts: useCallback(() => {
+      setShortcutsOpen((prev) => !prev)
+    }, []),
+  })
 
   // Close sidebar on navigation
   useEffect(() => {
@@ -81,6 +100,7 @@ export function DashboardShell({
       </main>
 
       <Toaster richColors position="bottom-right" />
+      <KeyboardShortcutsDialog open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
     </div>
   )
 }

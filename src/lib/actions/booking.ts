@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { getProfessional } from '@/lib/actions/professional'
 import { revalidatePath } from 'next/cache'
+import { sendBookingConfirmationEmail } from '@/lib/email'
 
 function generateSlug(name: string): string {
   return name
@@ -155,7 +156,7 @@ export async function createPublicBooking(input: {
 
   const { data: professional } = await supabase
     .from('professionals')
-    .select('id, appointment_duration')
+    .select('id, name, specialty, appointment_duration')
     .eq('id', page.professional_id)
     .single()
 
@@ -219,6 +220,20 @@ export async function createPublicBooking(input: {
       throw new Error('Ese horario ya no está disponible. Por favor elegí otro.')
     }
     throw new Error('Error al crear el turno')
+  }
+
+  // Send confirmation email (fire-and-forget)
+  if (input.email) {
+    const dateStr = startAt.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })
+    const timeStr = input.time
+    sendBookingConfirmationEmail({
+      to: input.email,
+      patientName: input.name,
+      professionalName: professional.name,
+      specialty: professional.specialty ?? '',
+      appointmentDate: dateStr,
+      appointmentTime: timeStr,
+    }).catch((err) => console.error('[BookingEmail] error:', err))
   }
 
   return { appointmentId: appointment.id }
