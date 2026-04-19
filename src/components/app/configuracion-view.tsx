@@ -539,6 +539,18 @@ function AccountSection({
   createdAt: string
 }) {
   const dateStr = format(new Date(createdAt), "d 'de' MMMM 'de' yyyy", { locale: es })
+  const [storageUsed, setStorageUsed] = useState<number | null>(null)
+
+  useState(() => {
+    import('@/lib/actions/files').then(m => m.getStorageUsage()).then(setStorageUsed).catch(() => {})
+  })
+
+  const formatStorage = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+    if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+    return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`
+  }
 
   return (
     <div className="space-y-6">
@@ -561,6 +573,12 @@ function AccountSection({
             <span className="text-sm text-muted-foreground">Cuenta creada</span>
             <span className="text-sm font-medium">{dateStr}</span>
           </div>
+          {storageUsed !== null && (
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">Almacenamiento usado</span>
+              <span className="text-sm font-medium">{formatStorage(storageUsed)}</span>
+            </div>
+          )}
           <div className="flex flex-wrap gap-2 pt-2">
             <Badge variant="secondary" className="bg-green-100 text-green-700 hover:bg-green-100">
               Médico fundador · Acceso de por vida

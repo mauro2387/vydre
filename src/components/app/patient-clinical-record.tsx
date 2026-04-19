@@ -15,6 +15,7 @@ import {
   FolderOpen,
   Loader2,
   Sparkles,
+  Paperclip,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -42,6 +43,8 @@ import {
   deactivatePatientMedication,
 } from '@/lib/actions/clinical'
 import { parseActionError } from '@/lib/utils/error-messages'
+import { FileUploadZone } from '@/components/app/file-upload-zone'
+import { PatientFilesGallery } from '@/components/app/patient-files-gallery'
 import type {
   Patient,
   ClinicalEntry,
@@ -60,7 +63,7 @@ export function PatientClinicalRecord({
   medications,
 }: {
   patient: Patient
-  entries: (ClinicalEntry & { appointments: { start_at: string; status: string } | null })[]
+  entries: (ClinicalEntry & { appointments: { start_at: string; status: string } | null; file_count?: number })[]
   medications: PatientMedication[]
 }) {
   const [tab, setTab] = useState<Tab>('ficha')
@@ -98,7 +101,7 @@ export function PatientClinicalRecord({
         <TabMedicacion patient={patient} medications={medications} />
       )}
       {tab === 'evolucion' && <TabEvolucion entries={entries} />}
-      {tab === 'archivos' && <TabArchivos />}
+      {tab === 'archivos' && <TabArchivos patientId={patient.id} professionalId={patient.professional_id} />}
     </div>
   )
 }
@@ -556,7 +559,7 @@ function TabMedicacion({
 function TabEvolucion({
   entries,
 }: {
-  entries: (ClinicalEntry & { appointments: { start_at: string; status: string } | null })[]
+  entries: (ClinicalEntry & { appointments: { start_at: string; status: string } | null; file_count?: number })[]
 }) {
   // Most recent entry starts open
   const [openIds, setOpenIds] = useState<Set<string>>(() => {
@@ -613,6 +616,12 @@ function TabEvolucion({
                   )}
                 </div>
                 <div className="flex items-center gap-2">
+                  {(entry.file_count ?? 0) > 0 && (
+                    <span className="flex items-center gap-0.5 text-xs text-muted-foreground">
+                      <Paperclip className="h-3 w-3" />
+                      {entry.file_count}
+                    </span>
+                  )}
                   {entry.ai_summary && (
                     <Sparkles className="h-3.5 w-3.5 text-amber-500" />
                   )}
@@ -680,15 +689,51 @@ function TabEvolucion({
   )
 }
 
-// ─── Tab Archivos (placeholder) ────────────────────────────────
-function TabArchivos() {
+// ─── Tab Archivos ──────────────────────────────────────────────
+function TabArchivos({ patientId, professionalId }: { patientId: string; professionalId: string }) {
+  const [files, setFiles] = useState<import('@/lib/types/database.types').PatientFile[]>([])
+  const [loading, setLoading] = useState(true)
+
+  const loadFiles = useCallback(async () => {
+    try {
+      const { getPatientFiles } = await import('@/lib/actions/files')
+      const data = await getPatientFiles(patientId)
+      setFiles(data)
+    } catch {
+      // silent
+    } finally {
+      setLoading(false)
+    }
+  }, [patientId])
+
+  useState(() => { loadFiles() })
+
+  const handleDelete = async (fileId: string) => {
+    const { deletePatientFile } = await import('@/lib/actions/files')
+    await deletePatientFile(fileId)
+    setFiles(prev => prev.filter(f => f.id !== fileId))
+  }
+
+  if (loading) {
+    return (
+      <div className="flex justify-center py-12">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
+
   return (
-    <div className="flex flex-col items-center py-12 text-center">
-      <FolderOpen className="mb-3 h-10 w-10 text-muted-foreground" />
-      <p className="text-sm font-medium">Archivos y documentos</p>
-      <p className="mt-1 text-xs text-muted-foreground">
-        Próximamente: subí estudios, imágenes y documentos del paciente.
-      </p>
+    <div className="space-y-4">
+      <FileUploadZone
+        patientId={patientId}
+        professionalId={professionalId}
+        onUploadComplete={loadFiles}
+      />
+      <PatientFilesGallery
+        files={files}
+        onDelete={handleDelete}
+        onRefresh={loadFiles}
+      />
     </div>
   )
 }

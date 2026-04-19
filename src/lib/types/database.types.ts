@@ -615,6 +615,50 @@ export type Database = {
         }
         Relationships: []
       }
+      patient_files: {
+        Row: {
+          id: string
+          professional_id: string
+          patient_id: string
+          clinical_entry_id: string | null
+          storage_path: string
+          filename: string
+          original_name: string
+          file_type: string
+          file_size: number
+          category: string
+          description: string | null
+          uploaded_at: string
+        }
+        Insert: {
+          id?: string
+          professional_id: string
+          patient_id: string
+          clinical_entry_id?: string | null
+          storage_path: string
+          filename: string
+          original_name: string
+          file_type: string
+          file_size: number
+          category?: string
+          description?: string | null
+          uploaded_at?: string
+        }
+        Update: {
+          id?: string
+          professional_id?: string
+          patient_id?: string
+          clinical_entry_id?: string | null
+          storage_path?: string
+          filename?: string
+          original_name?: string
+          file_type?: string
+          file_size?: number
+          category?: string
+          description?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -646,6 +690,7 @@ export type WaitlistEntry = Database['public']['Tables']['waitlist']['Row']
 export type Notification = Database['public']['Tables']['notifications']['Row']
 export type ClinicalEntry = Database['public']['Tables']['clinical_entries']['Row']
 export type PatientMedication = Database['public']['Tables']['patient_medications']['Row']
+export type PatientFile = Database['public']['Tables']['patient_files']['Row']
 
 // Medication entry in clinical_entries jsonb
 export type MedicationEntry = {
@@ -670,6 +715,7 @@ export type MessageType = 'reminder' | 'confirmation' | 'summary'
 export type MessageChannel = 'email' | 'whatsapp' | 'sms'
 export type MessageStatus = 'pending' | 'sent' | 'failed'
 export type ConfirmationResponse = 'confirmed' | 'declined'
+export type FileCategory = 'general' | 'radiografia' | 'laboratorio' | 'foto_clinica' | 'consentimiento' | 'receta' | 'derivacion' | 'otro'
 
 // Appointment con relaciones
 export type AppointmentWithRelations = Appointment & {

@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useForm, useFieldArray, useWatch } from 'react-hook-form'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { RefreshCw, Send, Loader2, Plus, Trash2, MessageCircle, AlertTriangle } from 'lucide-react'
+import { RefreshCw, Send, Loader2, Plus, Trash2, MessageCircle, AlertTriangle, Paperclip } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -26,6 +26,7 @@ import { parseActionError } from '@/lib/utils/error-messages'
 import { useAutoSave } from '@/lib/hooks/use-auto-save'
 import { AutoSaveIndicator } from '@/components/app/auto-save-indicator'
 import { findTemplateForSpecialty } from '@/lib/utils/clinical-templates'
+import { FileUploadZone } from '@/components/app/file-upload-zone'
 import type { AppointmentWithRelations, MedicationEntry } from '@/lib/types/database.types'
 
 type ClinicalForm = {
@@ -413,6 +414,22 @@ export function ClinicalEntryModal({
                   {...register('nextSteps')}
                 />
               </div>
+
+              {/* 9. File attachments */}
+              {patientId && (
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-1.5">
+                    <Paperclip className="h-4 w-4" />
+                    Archivos adjuntos
+                  </Label>
+                  <FileUploadZone
+                    patientId={patientId}
+                    professionalId={appointment.professional_id}
+                    clinicalEntryId={entryId ?? undefined}
+                    compact
+                  />
+                </div>
+              )}
 
               <div className="flex items-center justify-between gap-3">
                 <AutoSaveIndicator status={autoSaveStatus} lastSaved={lastSaved} />

@@ -19,6 +19,7 @@ import type { MedicationEntry, ClinicalEntry, PatientMedication, Patient, Json }
 
 type ClinicalEntryWithAppointment = ClinicalEntry & {
   appointments: { start_at: string; status: string } | null
+  file_count?: number
 }
 
 type ClinicalEntryWithPatient = ClinicalEntry & {
@@ -161,7 +162,7 @@ export async function getPatientClinicalRecord(patientId: string) {
   const professional = await getProfessional()
   if (!professional) return null
 
-  const [patientResult, entriesResult, medicationsResult] =
+  const [patientResult, entriesResult, medicationsResult, fileCountsResult] =
     await Promise.all([
       supabase
         .from('patients')
@@ -185,14 +186,32 @@ export async function getPatientClinicalRecord(patientId: string) {
         .eq('patient_id', patientId)
         .eq('professional_id', professional.id)
         .order('active', { ascending: false })
-        .order('created_at', { ascending: false })
+        .order('created_at', { ascending: false }),
+      supabase
+        .from('patient_files')
+        .select('clinical_entry_id')
+        .eq('patient_id', patientId)
+        .eq('professional_id', professional.id)
+        .not('clinical_entry_id', 'is', null),
     ])
 
   if (patientResult.error) return null
 
+  // Merge file counts into entries
+  const fileCounts: Record<string, number> = {}
+  for (const row of (fileCountsResult.data ?? [])) {
+    if (row.clinical_entry_id) {
+      fileCounts[row.clinical_entry_id] = (fileCounts[row.clinical_entry_id] ?? 0) + 1
+    }
+  }
+  const entries = (entriesResult.data ?? []).map(e => ({
+    ...e,
+    file_count: fileCounts[e.id] ?? 0,
+  })) as ClinicalEntryWithAppointment[]
+
   return {
     patient: patientResult.data as Patient,
-    entries: (entriesResult.data ?? []) as ClinicalEntryWithAppointment[],
+    entries,
     medications: (medicationsResult.data ?? []) as PatientMedication[],
   }
 }

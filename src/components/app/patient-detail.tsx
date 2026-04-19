@@ -24,7 +24,7 @@ export function PatientDetailView({
   medications,
 }: {
   patient: PatientDetail
-  clinicalEntries: (ClinicalEntry & { appointments: { start_at: string; status: string } | null })[]
+  clinicalEntries: (ClinicalEntry & { appointments: { start_at: string; status: string } | null; file_count?: number })[]
   medications: PatientMedication[]
 }) {
   const router = useRouter()
