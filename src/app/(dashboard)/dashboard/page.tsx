@@ -1,10 +1,10 @@
 import Link from 'next/link'
-import { CalendarDays, CalendarX, CheckCircle, Clock, AlertTriangle, Calendar, Send, Activity, DollarSign, Cake, UserX } from 'lucide-react'
+import { CalendarDays, CalendarX, CheckCircle, Clock, AlertTriangle, Calendar, Send, Activity, DollarSign, UserX } from 'lucide-react'
 import { formatDistanceToNow, format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { getTodayAppointments, getUpcomingUnconfirmed, getRecentActivity } from '@/lib/actions/appointments'
 import { getProfessional } from '@/lib/actions/professional'
-import { getUpcomingBirthdays, getInactivePatients } from '@/lib/actions/patients'
+import { getInactivePatients } from '@/lib/actions/patients'
 import { getPaymentsSummary } from '@/lib/actions/payments'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -14,12 +14,11 @@ import { nowInTimezone, formatInTimezone, DEFAULT_TZ } from '@/lib/utils'
 import type { AppointmentStatus, Professional } from '@/lib/types/database.types'
 
 export default async function DashboardPage() {
-  const [todayAppointments, unconfirmed, professional, recentActivity, birthdays, inactive, paymentsSummary] = await Promise.all([
+  const [todayAppointments, unconfirmed, professional, recentActivity, inactive, paymentsSummary] = await Promise.all([
     getTodayAppointments(),
     getUpcomingUnconfirmed(),
     getProfessional(),
     getRecentActivity(),
-    getUpcomingBirthdays(7),
     getInactivePatients(60),
     getPaymentsSummary(),
   ])
@@ -239,39 +238,8 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        {/* Right sidebar (1/3): birthdays + inactive */}
+        {/* Right sidebar (1/3): inactive */}
         <div className="space-y-6">
-          {/* Birthdays */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Cake className="h-4 w-4 text-pink-500" />
-                Cumpleaños próximos
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {birthdays.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Sin cumpleaños esta semana</p>
-              ) : (
-                <ul className="space-y-2">
-                  {birthdays.map((p) => {
-                    const [, m, d] = p.dob.split('-').map(Number)
-                    const bday = new Date(new Date().getFullYear(), m - 1, d)
-                    const label = format(bday, "d 'de' MMMM", { locale: es })
-                    return (
-                      <li key={p.id} className="flex items-center justify-between text-sm">
-                        <Link href={`/pacientes?id=${p.id}`} className="font-medium hover:underline">
-                          {p.name}
-                        </Link>
-                        <span className="text-xs text-muted-foreground">{label}</span>
-                      </li>
-                    )
-                  })}
-                </ul>
-              )}
-            </CardContent>
-          </Card>
-
           {/* Inactive patients */}
           <Card>
             <CardHeader className="pb-3">

@@ -215,43 +215,6 @@ export async function updatePatient(
 }
 
 /**
- * Patients whose birthday (dob) is within the next N days.
- * Returns name + dob. Max 10.
- */
-export async function getUpcomingBirthdays(days = 7): Promise<{ id: string; name: string; dob: string }[]> {
-  const supabase = await createClient()
-  const professional = await getProfessionalSafe()
-  if (!professional) return []
-
-  // We fetch all patients with a dob then filter in JS — patients table is small per professional.
-  const { data } = await supabase
-    .from('patients')
-    .select('id, name, dob')
-    .eq('professional_id', professional.id)
-    .not('dob', 'is', null)
-
-  if (!data) return []
-
-  const today = new Date()
-  const threshold = new Date()
-  threshold.setDate(today.getDate() + days)
-
-  return (data as { id: string; name: string; dob: string }[])
-    .filter((p) => {
-      const [, m, d] = p.dob.split('-').map(Number)
-      const thisYear = new Date(today.getFullYear(), m - 1, d)
-      if (thisYear < today) thisYear.setFullYear(thisYear.getFullYear() + 1)
-      return thisYear >= today && thisYear <= threshold
-    })
-    .sort((a, b) => {
-      const [, am, ad] = a.dob.split('-').map(Number)
-      const [, bm, bd] = b.dob.split('-').map(Number)
-      return am * 100 + ad - (bm * 100 + bd)
-    })
-    .slice(0, 10)
-}
-
-/**
  * Patients without any appointment in the last N days.
  * Max 10.
  */
