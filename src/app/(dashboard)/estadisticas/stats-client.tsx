@@ -1,5 +1,6 @@
 'use client'
 
+import React from 'react'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import {
@@ -262,8 +263,8 @@ export function StatsClient({
 
               {/* Data rows */}
               {orderedDays.map((day) => (
-                <>
-                  <div key={`label-${day}`} className="text-muted-foreground flex items-center text-xs">
+                <React.Fragment key={`row-${day}`}>
+                  <div className="text-muted-foreground flex items-center text-xs">
                     {DAY_NAMES[day]}
                   </div>
                   {Array.from({ length: 15 }, (_, i) => {
@@ -282,7 +283,7 @@ export function StatsClient({
                       </div>
                     )
                   })}
-                </>
+                </React.Fragment>
               ))}
             </div>
           </div>
