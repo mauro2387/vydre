@@ -16,6 +16,7 @@ import {
   parseOrThrow,
 } from '@/lib/validation/schemas'
 import type { MedicationEntry, ClinicalEntry, PatientMedication, Patient, Json } from '@/lib/types/database.types'
+import { logAuditEvent } from '@/lib/audit'
 
 type ClinicalEntryWithAppointment = ClinicalEntry & {
   appointments: { start_at: string; status: string } | null
@@ -341,6 +342,16 @@ export async function saveClinicalEntry(params: {
   revalidatePath('/dashboard')
   revalidatePath('/consultas')
 
+  if (entry) {
+    void logAuditEvent({
+      professionalId: professional.id,
+      userId: user.id,
+      action: 'clinical_entry.created',
+      resourceType: 'clinical_entry',
+      resourceId: entry.id,
+    })
+  }
+
   return entry
 }
 
@@ -563,4 +574,13 @@ export async function sendClinicalSummary(
 
   revalidatePath('/pacientes')
   revalidatePath('/consultas')
+
+  void logAuditEvent({
+    professionalId: professional.id,
+    userId: user.id,
+    action: 'summary.sent',
+    resourceType: 'clinical_entry',
+    resourceId: id,
+    metadata: { patient_email: apt?.patients?.email },
+  })
 }

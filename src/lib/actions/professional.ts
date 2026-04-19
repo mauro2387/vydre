@@ -4,6 +4,7 @@ import { cache } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
+import { logAuditEvent } from '@/lib/audit'
 
 export const getProfessional = cache(async () => {
   const supabase = await createClient()
@@ -164,6 +165,11 @@ export async function changePassword(currentPassword: string, newPassword: strin
   })
 
   if (error) throw new Error(`Error al cambiar contraseña: ${error.message}`)
+
+  void logAuditEvent({
+    userId: user.id,
+    action: 'auth.password_changed',
+  })
 }
 
 export async function signOutAllSessions() {

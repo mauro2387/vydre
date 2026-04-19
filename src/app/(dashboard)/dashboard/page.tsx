@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { CalendarDays, CalendarX, CheckCircle, Clock, AlertTriangle, Calendar, Send, Activity, DollarSign, UserX } from 'lucide-react'
 import { formatDistanceToNow, format } from 'date-fns'
 import { es } from 'date-fns/locale'
+import { createClient } from '@/lib/supabase/server'
 import { getTodayAppointments, getUpcomingUnconfirmed, getRecentActivity } from '@/lib/actions/appointments'
 import { getProfessional } from '@/lib/actions/professional'
 import { getInactivePatients } from '@/lib/actions/patients'
@@ -10,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { AppointmentStatusBadge } from '@/components/app/appointment-status-badge'
 import { ActivationBanner } from '@/components/app/activation-banner'
+import { TwoFactorBanner } from '@/components/app/two-factor-banner'
 import { nowInTimezone, formatInTimezone, DEFAULT_TZ } from '@/lib/utils'
 import type { AppointmentStatus, Professional } from '@/lib/types/database.types'
 
@@ -22,6 +24,15 @@ export default async function DashboardPage() {
     getInactivePatients(60),
     getPaymentsSummary(),
   ])
+
+  // Check 2FA status
+  const supabase = await createClient()
+  const { data: factors } = await supabase.auth.mfa.listFactors()
+  const has2FA = factors?.totp?.some((f) => f.status === 'verified') ?? false
+  const daysSinceRegistration = professional?.created_at
+    ? Math.floor((Date.now() - new Date(professional.created_at).getTime()) / 86400000)
+    : 0
+  const show2FABanner = !has2FA && professional?.activation_complete && daysSinceRegistration >= 7
 
   const tz = professional?.timezone ?? DEFAULT_TZ
   const { hour } = nowInTimezone(tz)
@@ -57,6 +68,8 @@ export default async function DashboardPage() {
       {professional && !professional.activation_complete && (
         <ActivationBanner professional={professional as Professional} />
       )}
+
+      {show2FABanner && <TwoFactorBanner />}
 
       {/* KPI cards — 4 columns */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

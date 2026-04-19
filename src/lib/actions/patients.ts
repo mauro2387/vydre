@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { getProfessional, checkActivationComplete } from './professional'
 import { createPatientSchema, updatePatientSchema, parseOrThrow } from '@/lib/validation/schemas'
+import { logAuditEvent } from '@/lib/audit'
 import type { Patient, PatientDetail } from '@/lib/types/database.types'
 
 async function getProfessionalSafe() {
@@ -163,6 +164,15 @@ export async function createPatient(formData: {
     .single()
 
   if (error) throw new Error(error.message)
+
+  void logAuditEvent({
+    professionalId: professional.id,
+    userId: user.id,
+    action: 'patient.created',
+    resourceType: 'patient',
+    resourceId: data.id,
+    metadata: { name: parsed.name },
+  })
 
   // Track activation
   await supabase

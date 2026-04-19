@@ -32,11 +32,16 @@ export default async function DashboardLayout({
     .eq('professional_id', professional.id)
     .eq('read', false)
 
+  // Check 2FA status
+  const { data: factors } = await supabase.auth.mfa.listFactors()
+  const has2FA = factors?.totp?.some((f) => f.status === 'verified') ?? false
+
   return (
     <DashboardShell
       professionalName={professional.name}
       professionalSpecialty={professional.specialty}
       unreadNotifications={unreadCount ?? 0}
+      has2FA={has2FA}
     >
       {children}
     </DashboardShell>

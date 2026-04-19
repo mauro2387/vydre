@@ -12,11 +12,13 @@ export function DashboardShell({
   professionalName,
   professionalSpecialty,
   unreadNotifications,
+  has2FA,
   children,
 }: {
   professionalName: string
   professionalSpecialty: string
   unreadNotifications: number
+  has2FA: boolean
   children: React.ReactNode
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -91,6 +93,7 @@ export function DashboardShell({
           professionalName={professionalName}
           professionalSpecialty={professionalSpecialty}
           unreadNotifications={unreadNotifications}
+          has2FA={has2FA}
         />
       </aside>
 

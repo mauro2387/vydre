@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { LayoutDashboard, CalendarDays, Users, ClipboardList, Settings, LogOut, BarChart2 } from 'lucide-react'
+import { LayoutDashboard, CalendarDays, Users, ClipboardList, Settings, LogOut, BarChart2, ShieldCheck, ShieldAlert } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -16,6 +16,7 @@ const navItems = [
   { href: '/pacientes', label: 'Pacientes', icon: Users },
   { href: '/consultas', label: 'Consultas', icon: ClipboardList },
   { href: '/estadisticas', label: 'Estadísticas', icon: BarChart2 },
+  { href: '/seguridad', label: 'Seguridad', icon: ShieldCheck },
   { href: '/configuracion', label: 'Configuración', icon: Settings },
 ]
 
@@ -49,10 +50,12 @@ export function SidebarNav({
   professionalName,
   professionalSpecialty,
   unreadNotifications,
+  has2FA,
 }: {
   professionalName: string
   professionalSpecialty: string
   unreadNotifications: number
+  has2FA: boolean
 }) {
   const pathname = usePathname()
   const router = useRouter()
@@ -110,6 +113,17 @@ export function SidebarNav({
             <p className="text-xs text-muted-foreground truncate">{professionalSpecialty}</p>
           </div>
         </div>
+        {has2FA ? (
+          <div className="flex items-center gap-1.5 text-xs text-green-600">
+            <ShieldCheck className="h-3.5 w-3.5" />
+            2FA activo
+          </div>
+        ) : (
+          <Link href="/seguridad" className="flex items-center gap-1.5 text-xs text-orange-500 hover:underline">
+            <ShieldAlert className="h-3.5 w-3.5" />
+            Sin 2FA
+          </Link>
+        )}
         <p className="text-[10px] text-muted-foreground">Vydre v0.1.0 · Beta</p>
         <Button
           variant="ghost"

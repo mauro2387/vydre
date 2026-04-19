@@ -11,6 +11,7 @@ import {
   parseOrThrow,
 } from '@/lib/validation/schemas'
 import type { AppointmentWithRelations, AppointmentStatus } from '@/lib/types/database.types'
+import { logAuditEvent } from '@/lib/audit'
 
 export async function getTodayAppointments(): Promise<AppointmentWithRelations[]> {
   const supabase = await createClient()
@@ -159,6 +160,14 @@ export async function createAppointment(data: {
     }
     throw new Error(error.message)
   }
+
+  void logAuditEvent({
+    professionalId: professional.id,
+    userId: user.id,
+    action: 'appointment.created',
+    resourceType: 'appointment',
+    resourceId: inserted.id,
+  })
 
   // Track activation
   await supabase
@@ -353,6 +362,16 @@ export async function updateAppointmentStatus(
     .eq('professional_id', professional.id)
 
   if (error) throw new Error(error.message)
+
+  if (s === 'cancelled') {
+    void logAuditEvent({
+      professionalId: professional.id,
+      userId: user.id,
+      action: 'appointment.cancelled',
+      resourceType: 'appointment',
+      resourceId: id,
+    })
+  }
 
   revalidatePath('/agenda')
   revalidatePath('/dashboard')

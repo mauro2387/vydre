@@ -659,6 +659,44 @@ export type Database = {
         }
         Relationships: []
       }
+      audit_log: {
+        Row: {
+          id: string
+          professional_id: string | null
+          user_id: string | null
+          action: string
+          resource_type: string | null
+          resource_id: string | null
+          metadata: Json
+          ip_address: string | null
+          user_agent: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          professional_id?: string | null
+          user_id?: string | null
+          action: string
+          resource_type?: string | null
+          resource_id?: string | null
+          metadata?: Json
+          ip_address?: string | null
+          user_agent?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          professional_id?: string | null
+          user_id?: string | null
+          action?: string
+          resource_type?: string | null
+          resource_id?: string | null
+          metadata?: Json
+          ip_address?: string | null
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -691,6 +729,7 @@ export type Notification = Database['public']['Tables']['notifications']['Row']
 export type ClinicalEntry = Database['public']['Tables']['clinical_entries']['Row']
 export type PatientMedication = Database['public']['Tables']['patient_medications']['Row']
 export type PatientFile = Database['public']['Tables']['patient_files']['Row']
+export type AuditLogEntry = Database['public']['Tables']['audit_log']['Row']
 
 // Medication entry in clinical_entries jsonb
 export type MedicationEntry = {

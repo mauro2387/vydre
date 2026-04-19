@@ -34,6 +34,7 @@ import { updateDefaultFees } from '@/lib/actions/payments'
 import { getBookingPage, upsertBookingPage, generateUniqueSlug } from '@/lib/actions/booking'
 import { parseActionError } from '@/lib/utils/error-messages'
 import { PasswordStrength } from '@/components/app/password-strength'
+import { TwoFactorSetup } from '@/components/app/two-factor-setup'
 import type { Professional } from '@/lib/types/database.types'
 
 const specialties = [
@@ -593,6 +594,8 @@ function AccountSection({
           </div>
         </CardContent>
       </Card>
+
+      <TwoFactorSetup />
 
       <ChangePasswordSection />
 

@@ -5,6 +5,7 @@ import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { getProfessional } from './professional'
+import { logAuditEvent } from '@/lib/audit'
 
 const MAX_FILE_SIZE = 20 * 1024 * 1024 // 20MB
 const ALLOWED_TYPES = [
@@ -166,6 +167,15 @@ export async function registerFileUpload(params: {
 
   if (error) throw new Error(error.message)
 
+  void logAuditEvent({
+    professionalId: professional.id,
+    userId: user.id,
+    action: 'file.uploaded',
+    resourceType: 'patient_file',
+    resourceId: data.id,
+    metadata: { filename: params.originalName, category: params.category },
+  })
+
   revalidatePath('/pacientes')
   return data
 }
@@ -180,7 +190,7 @@ export async function deletePatientFile(fileId: string) {
 
   const { data: file, error: fetchError } = await supabase
     .from('patient_files')
-    .select('storage_path, professional_id')
+    .select('storage_path, professional_id, original_name')
     .eq('id', fileId)
     .eq('professional_id', professional.id)
     .single()
@@ -204,6 +214,16 @@ export async function deletePatientFile(fileId: string) {
     .eq('professional_id', professional.id)
 
   if (dbError) throw new Error(dbError.message)
+
+  void logAuditEvent({
+    professionalId: professional.id,
+    userId: user.id,
+    action: 'file.deleted',
+    resourceType: 'patient_file',
+    resourceId: fileId,
+    metadata: { filename: file.original_name },
+  })
+
   revalidatePath('/pacientes')
 }
 

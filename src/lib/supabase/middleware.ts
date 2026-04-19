@@ -43,11 +43,39 @@ export async function updateSession(request: NextRequest) {
     url.pathname === '/'
 
   if (!user && !isPublicRoute) {
+    // Allow /verificar-2fa only for authenticated users
+    if (url.pathname.startsWith('/verificar-2fa')) {
+      return NextResponse.redirect(new URL('/login', request.url))
+    }
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
   if (user && (url.pathname === '/login' || url.pathname === '/registro' || url.pathname === '/recuperar')) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
+  }
+
+  // Check MFA assurance level for authenticated users on protected routes
+  if (user && !isPublicRoute && !url.pathname.startsWith('/verificar-2fa')) {
+    try {
+      const { data } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
+      if (data && data.nextLevel === 'aal2' && data.currentLevel !== 'aal2') {
+        return NextResponse.redirect(new URL('/verificar-2fa', request.url))
+      }
+    } catch {
+      // If MFA check fails, continue normally
+    }
+  }
+
+  // If user is on /verificar-2fa but already at aal2, redirect to dashboard
+  if (user && url.pathname.startsWith('/verificar-2fa')) {
+    try {
+      const { data } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
+      if (data && data.currentLevel === 'aal2') {
+        return NextResponse.redirect(new URL('/dashboard', request.url))
+      }
+    } catch {
+      // Continue
+    }
   }
 
   return supabaseResponse
