@@ -38,6 +38,8 @@ export async function updateSession(request: NextRequest) {
     url.pathname.startsWith('/confirmar') ||
     url.pathname.startsWith('/privacidad') ||
     url.pathname.startsWith('/api/waitlist') ||
+    url.pathname.startsWith('/reservar') ||
+    url.pathname.startsWith('/formulario') ||
     url.pathname === '/'
 
   if (!user && !isPublicRoute) {
