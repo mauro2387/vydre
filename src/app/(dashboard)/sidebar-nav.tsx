@@ -2,40 +2,23 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { LayoutDashboard, CalendarDays, Users, ClipboardList, Settings, LogOut, BarChart2, ShieldCheck, ShieldAlert } from 'lucide-react'
+import { LayoutDashboard, CalendarDays, Users, FileText, Settings, LogOut, BarChart2, ShieldCheck, Search } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
-import { Separator } from '@/components/ui/separator'
-import { NotificationsPopover } from '@/components/app/notifications-popover'
 import { GlobalSearch } from '@/components/app/global-search'
 
-const navItems = [
+const mainNavItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/agenda', label: 'Agenda', icon: CalendarDays },
   { href: '/pacientes', label: 'Pacientes', icon: Users },
-  { href: '/consultas', label: 'Consultas', icon: ClipboardList },
+  { href: '/consultas', label: 'Consultas', icon: FileText },
   { href: '/estadisticas', label: 'Estadísticas', icon: BarChart2 },
   { href: '/seguridad', label: 'Seguridad', icon: ShieldCheck },
+]
+
+const bottomNavItems = [
   { href: '/configuracion', label: 'Configuración', icon: Settings },
 ]
-
-const avatarColors = [
-  'bg-blue-500',
-  'bg-emerald-500',
-  'bg-violet-500',
-  'bg-amber-500',
-  'bg-rose-500',
-  'bg-cyan-500',
-]
-
-function getAvatarColor(name: string): string {
-  let sum = 0
-  for (let i = 0; i < name.length; i++) {
-    sum += name.charCodeAt(i)
-  }
-  return avatarColors[sum % avatarColors.length]
-}
 
 function getInitials(name: string): string {
   return name
@@ -67,17 +50,29 @@ export function SidebarNav({
   }
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="flex items-center justify-between p-6">
-        <h1 className="text-xl font-bold">Vydre</h1>
-        <NotificationsPopover initialCount={unreadNotifications} />
+    <div className="sidebar flex h-full flex-col" style={{ background: 'var(--sidebar-bg)' }}>
+      {/* Logo */}
+      <div
+        className="flex h-16 items-center gap-2.5 px-4"
+        style={{ borderBottom: '1px solid var(--sidebar-border)' }}
+      >
+        <div
+          className="flex h-7 w-7 shrink-0 items-center justify-center text-white"
+          style={{ background: 'var(--brand)', borderRadius: '7px', fontSize: '15px', fontWeight: 700 }}
+        >
+          V
+        </div>
+        <span style={{ color: '#F8FAFC', fontSize: '16px', fontWeight: 600 }}>Vydre</span>
       </div>
-      <Separator />
-      <div className="px-4 pt-4">
+
+      {/* Search */}
+      <div className="px-3 pt-3 pb-1">
         <GlobalSearch />
       </div>
-      <nav className="flex-1 space-y-1 p-4">
-        {navItems.map((item) => {
+
+      {/* Main nav */}
+      <nav className="flex-1 space-y-0.5 px-2 pt-2">
+        {mainNavItems.map((item) => {
           const Icon = item.icon
           const isActive = pathname === item.href
           return (
@@ -85,55 +80,114 @@ export function SidebarNav({
               key={item.href}
               href={item.href}
               className={cn(
-                'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                'relative flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
                 isActive
-                  ? 'bg-accent border-l-2 border-primary text-foreground'
-                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                  ? 'text-[var(--sidebar-text-active)]'
+                  : 'text-[var(--sidebar-text)] hover:bg-[var(--sidebar-item-hover-bg)]'
               )}
+              style={isActive ? { background: 'var(--sidebar-item-active-bg)' } : undefined}
             >
-              <Icon className={cn('h-4 w-4', isActive && 'text-primary')} />
+              {isActive && (
+                <span
+                  className="absolute left-0 top-1/2 -translate-y-1/2"
+                  style={{
+                    width: '3px',
+                    height: '16px',
+                    background: 'var(--brand)',
+                    borderRadius: '0 2px 2px 0',
+                  }}
+                />
+              )}
+              <Icon
+                size={16}
+                style={isActive ? { color: 'var(--brand)' } : undefined}
+              />
+              {item.label}
+            </Link>
+          )
+        })}
+
+        {/* Separator */}
+        <div
+          className="mx-3 my-1"
+          style={{ height: '1px', background: 'var(--sidebar-border)' }}
+        />
+
+        {bottomNavItems.map((item) => {
+          const Icon = item.icon
+          const isActive = pathname === item.href
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn(
+                'relative flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                isActive
+                  ? 'text-[var(--sidebar-text-active)]'
+                  : 'text-[var(--sidebar-text)] hover:bg-[var(--sidebar-item-hover-bg)]'
+              )}
+              style={isActive ? { background: 'var(--sidebar-item-active-bg)' } : undefined}
+            >
+              {isActive && (
+                <span
+                  className="absolute left-0 top-1/2 -translate-y-1/2"
+                  style={{
+                    width: '3px',
+                    height: '16px',
+                    background: 'var(--brand)',
+                    borderRadius: '0 2px 2px 0',
+                  }}
+                />
+              )}
+              <Icon
+                size={16}
+                style={isActive ? { color: 'var(--brand)' } : undefined}
+              />
               {item.label}
             </Link>
           )
         })}
       </nav>
-      <Separator />
-      <div className="p-4 space-y-3">
-        <div className="flex items-center gap-3">
+
+      {/* User section */}
+      <div
+        className="px-3 py-3"
+        style={{ borderTop: '1px solid var(--sidebar-border)' }}
+      >
+        <div className="flex items-center gap-2.5">
           <div
-            className={cn(
-              'flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white',
-              getAvatarColor(professionalName)
-            )}
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-white"
+            style={{ background: 'var(--brand)', fontSize: '12px', fontWeight: 600 }}
           >
             {getInitials(professionalName)}
           </div>
-          <div className="min-w-0">
-            <p className="text-sm font-medium truncate">{professionalName}</p>
-            <p className="text-xs text-muted-foreground truncate">{professionalSpecialty}</p>
+          <div className="min-w-0 flex-1">
+            <p className="truncate" style={{ fontSize: '13px', fontWeight: 500, color: '#F8FAFC' }}>
+              {professionalName}
+            </p>
+            <p className="truncate" style={{ fontSize: '12px', color: '#64748B' }}>
+              {professionalSpecialty}
+            </p>
+            {has2FA && (
+              <p style={{ fontSize: '11px', color: '#34D399' }}>
+                ● 2FA activo
+              </p>
+            )}
           </div>
+          <button
+            onClick={handleLogout}
+            className="group shrink-0 rounded-md p-1.5"
+            title="Cerrar sesión"
+          >
+            <LogOut
+              size={14}
+              className="transition-colors"
+              style={{ color: '#475569' }}
+              onMouseEnter={(e) => { e.currentTarget.style.color = '#F8FAFC' }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = '#475569' }}
+            />
+          </button>
         </div>
-        {has2FA ? (
-          <div className="flex items-center gap-1.5 text-xs text-green-600">
-            <ShieldCheck className="h-3.5 w-3.5" />
-            2FA activo
-          </div>
-        ) : (
-          <Link href="/seguridad" className="flex items-center gap-1.5 text-xs text-orange-500 hover:underline">
-            <ShieldAlert className="h-3.5 w-3.5" />
-            Sin 2FA
-          </Link>
-        )}
-        <p className="text-[10px] text-muted-foreground">Vydre v0.1.0 · Beta</p>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="w-full justify-start gap-2"
-          onClick={handleLogout}
-        >
-          <LogOut className="h-4 w-4" />
-          Cerrar sesión
-        </Button>
       </div>
     </div>
   )

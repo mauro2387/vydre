@@ -1,0 +1,42 @@
+:root {
+  /* Brand */
+  --brand: #0EA5E9;
+  --brand-light: #E0F2FE;
+  --brand-dark: #0284C7;
+
+  /* Sidebar */
+  --sidebar-bg: #0F172A;
+  --sidebar-text: #94A3B8;
+  --sidebar-text-active: #F8FAFC;
+  --sidebar-item-active-bg: rgba(14, 165, 233, 0.12);
+  --sidebar-item-hover-bg: rgba(255, 255, 255, 0.05);
+  --sidebar-border: rgba(255, 255, 255, 0.06);
+
+  /* Layout */
+  --page-bg: #F8FAFC;
+  --card-bg: #FFFFFF;
+  --card-border: #E2E8F0;
+  --card-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --card-shadow-hover: 0 4px 12px rgba(0,0,0,0.08);
+
+  /* Text */
+  --text-primary: #0F172A;
+  --text-secondary: #475569;
+  --text-tertiary: #94A3B8;
+  --text-brand: #0EA5E9;
+
+  /* Status colors */
+  --status-confirmed: #059669;
+  --status-confirmed-bg: #ECFDF5;
+  --status-pending: #D97706;
+  --status-pending-bg: #FFFBEB;
+  --status-completed: #475569;
+  --status-completed-bg: #F1F5F9;
+  --status-absent: #DC2626;
+  --status-absent-bg: #FEF2F2;
+
+  /* Spacing */
+  --page-padding: 32px;
+  --card-radius: 12px;
+  --btn-radius: 8px;
+}

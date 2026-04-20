@@ -24,6 +24,25 @@ import type { Patient } from '@/lib/types/database.types'
 const getInitials = (name: string) =>
   name.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase()
 
+const avatarColors = [
+  { bg: '#DBEAFE', color: '#2563EB' },
+  { bg: '#FCE7F3', color: '#DB2777' },
+  { bg: '#D1FAE5', color: '#059669' },
+  { bg: '#FEF3C7', color: '#D97706' },
+  { bg: '#E0E7FF', color: '#4F46E5' },
+  { bg: '#CFFAFE', color: '#0891B2' },
+  { bg: '#FDE68A', color: '#92400E' },
+  { bg: '#F3E8FF', color: '#7C3AED' },
+]
+
+function getAvatarColor(name: string) {
+  let hash = 0
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash)
+  }
+  return avatarColors[Math.abs(hash) % avatarColors.length]
+}
+
 const patientSchema = z.object({
   name: z.string().min(1, 'El nombre es requerido'),
   phone: z.string().min(1, 'El teléfono es requerido'),
@@ -108,8 +127,8 @@ export function PatientList({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">Pacientes</h1>
-          <p className="text-sm text-muted-foreground">{patients.length} pacientes</p>
+          <h1 style={{ fontSize: '20px', fontWeight: 600, color: 'var(--text-primary)' }}>Pacientes</h1>
+          <p style={{ fontSize: '13px', color: 'var(--text-tertiary)', marginTop: '2px' }}>{patients.length} pacientes</p>
         </div>
         <Button size="sm" onClick={() => setOpenNewPatient(true)}>
           <Plus className="mr-1 h-4 w-4" />
@@ -119,13 +138,18 @@ export function PatientList({
 
       {/* Search */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" style={{ color: 'var(--text-tertiary)' }} />
         <Input
           type="search"
           placeholder="Buscar paciente..."
           className="pl-9"
           value={value}
           onChange={(e) => setValue(e.target.value)}
+          style={{
+            background: 'var(--card-bg)',
+            border: '1px solid var(--card-border)',
+            borderRadius: 'var(--btn-radius)',
+          }}
         />
       </div>
 
@@ -145,23 +169,45 @@ export function PatientList({
         </p>
       ) : (
         <div className="space-y-1">
-          {patients.map((patient) => (
-            <button
-              key={patient.id}
-              onClick={() => handleSelectPatient(patient.id)}
-              className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-accent ${
-                selectedId === patient.id ? 'bg-accent' : ''
-              }`}
-            >
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-medium text-primary">
-                {getInitials(patient.name)}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium">{patient.name}</p>
-                <p className="truncate text-xs text-muted-foreground">{patient.phone}</p>
-              </div>
-            </button>
-          ))}
+          {patients.map((patient) => {
+            const isActive = selectedId === patient.id
+            const avatarColor = getAvatarColor(patient.name)
+            return (
+              <button
+                key={patient.id}
+                onClick={() => handleSelectPatient(patient.id)}
+                className="flex w-full items-center gap-3 text-left transition-all"
+                style={{
+                  borderRadius: 'var(--btn-radius)',
+                  padding: '10px 12px',
+                  borderLeft: isActive ? '3px solid var(--brand)' : '3px solid transparent',
+                  background: isActive ? '#EFF6FF' : 'transparent',
+                }}
+                onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.background = '#F8FAFC' }}
+                onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.background = 'transparent' }}
+              >
+                <div
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
+                  style={{
+                    background: avatarColor.bg,
+                    color: avatarColor.color,
+                    fontSize: '13px',
+                    fontWeight: 600,
+                  }}
+                >
+                  {getInitials(patient.name)}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate" style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-primary)' }}>
+                    {patient.name}
+                  </p>
+                  <p className="truncate" style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>
+                    {patient.phone}
+                  </p>
+                </div>
+              </button>
+            )
+          })}
           {hasMore && (
             <Button
               variant="ghost"

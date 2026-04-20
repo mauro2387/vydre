@@ -94,13 +94,27 @@ export function GlobalSearch() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="flex h-8 w-full items-center gap-2 rounded-md bg-secondary px-2 text-left text-xs text-muted-foreground transition-colors hover:bg-secondary/70"
+        className="flex h-9 w-full items-center gap-2 rounded-lg px-3 text-left text-[13px] transition-colors"
+        style={{
+          background: 'rgba(255,255,255,0.05)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          color: '#64748B',
+        }}
       >
-        <Search className="h-3.5 w-3.5" />
+        <Search className="h-3.5 w-3.5" style={{ color: '#64748B' }} />
         <span className="flex-1 truncate">Buscar...</span>
-        <kbd className="pointer-events-none hidden select-none rounded border bg-background px-1 font-mono text-[10px] sm:inline">
+        <span
+          className="pointer-events-none hidden select-none sm:inline"
+          style={{
+            background: 'rgba(255,255,255,0.06)',
+            borderRadius: '4px',
+            padding: '2px 6px',
+            fontSize: '11px',
+            color: '#475569',
+          }}
+        >
           ⌘K
-        </kbd>
+        </span>
       </button>
 
       <CommandDialog

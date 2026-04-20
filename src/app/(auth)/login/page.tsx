@@ -118,39 +118,97 @@ export default function LoginPage() {
   return (
     <div className="grid min-h-screen grid-cols-1 md:grid-cols-[40%_60%]">
       {/* Branding panel — hidden on mobile */}
-      <div className="hidden flex-col justify-between bg-gray-900 p-10 text-white md:flex">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Vydre</h1>
-          <p className="mt-2 text-lg text-gray-400">Tu consultorio, organizado.</p>
+      <div
+        className="hidden flex-col justify-between p-10 text-white md:flex"
+        style={{ background: '#0F172A' }}
+      >
+        <div className="flex items-center gap-2">
+          <div
+            className="flex items-center justify-center"
+            style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: '8px',
+              background: 'var(--brand)',
+              color: 'white',
+              fontSize: '16px',
+              fontWeight: 700,
+            }}
+          >
+            V
+          </div>
+          <span style={{ fontSize: '20px', fontWeight: 700, color: 'white' }}>Vydre</span>
         </div>
 
         <div className="space-y-6">
           <div className="flex items-start gap-3">
-            <Calendar className="mt-0.5 h-5 w-5 shrink-0 text-gray-400" />
-            <p className="text-sm text-gray-300">Agenda inteligente sin complicaciones</p>
+            <div
+              className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
+              style={{ background: 'rgba(14, 165, 233, 0.15)' }}
+            >
+              <Calendar className="h-4 w-4" style={{ color: '#7DD3FC' }} />
+            </div>
+            <div>
+              <p style={{ fontSize: '14px', fontWeight: 500, color: 'white' }}>Agenda inteligente</p>
+              <p style={{ fontSize: '13px', color: '#94A3B8' }}>Sin complicaciones</p>
+            </div>
           </div>
           <div className="flex items-start gap-3">
-            <Bell className="mt-0.5 h-5 w-5 shrink-0 text-gray-400" />
-            <p className="text-sm text-gray-300">Recordatorios automáticos para tus pacientes</p>
+            <div
+              className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
+              style={{ background: 'rgba(14, 165, 233, 0.15)' }}
+            >
+              <Bell className="h-4 w-4" style={{ color: '#7DD3FC' }} />
+            </div>
+            <div>
+              <p style={{ fontSize: '14px', fontWeight: 500, color: 'white' }}>Recordatorios automáticos</p>
+              <p style={{ fontSize: '13px', color: '#94A3B8' }}>Para tus pacientes</p>
+            </div>
           </div>
           <div className="flex items-start gap-3">
-            <Brain className="mt-0.5 h-5 w-5 shrink-0 text-gray-400" />
-            <p className="text-sm text-gray-300">Resúmenes de consulta generados con IA</p>
+            <div
+              className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
+              style={{ background: 'rgba(14, 165, 233, 0.15)' }}
+            >
+              <Brain className="h-4 w-4" style={{ color: '#7DD3FC' }} />
+            </div>
+            <div>
+              <p style={{ fontSize: '14px', fontWeight: 500, color: 'white' }}>Resúmenes con IA</p>
+              <p style={{ fontSize: '13px', color: '#94A3B8' }}>Generados automáticamente</p>
+            </div>
           </div>
         </div>
 
-        <p className="text-xs text-gray-500">Vydre · Maldonado, Uruguay 🇺🇾</p>
+        <p style={{ fontSize: '12px', color: '#475569' }}>Vydre · Maldonado, Uruguay 🇺🇾</p>
       </div>
 
       {/* Form column */}
-      <div className="flex items-center justify-center px-4">
-        <Card className="w-full max-w-sm border-0 shadow-none md:border md:shadow-sm">
+      <div
+        className="flex items-center justify-center px-4"
+        style={{ background: '#F8FAFC' }}
+      >
+        <Card className="w-full max-w-sm" style={{ boxShadow: '0 4px 24px rgba(0,0,0,0.08)', borderRadius: '16px', border: '1px solid #E2E8F0' }}>
           <CardHeader className="text-center">
-            <h2 className="text-2xl font-bold tracking-tight md:hidden">Vydre</h2>
+            <div className="mb-2 flex justify-center md:hidden">
+              <div
+                className="flex items-center justify-center"
+                style={{
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '10px',
+                  background: 'var(--brand)',
+                  color: 'white',
+                  fontSize: '18px',
+                  fontWeight: 700,
+                }}
+              >
+                V
+              </div>
+            </div>
             <h3 className="text-xl font-semibold">Iniciá sesión</h3>
             <p className="text-sm text-muted-foreground">
               ¿No tenés cuenta?{' '}
-              <Link href="/registro" className="text-primary underline">
+              <Link href="/registro" className="font-medium hover:underline" style={{ color: 'var(--brand)' }}>
                 Registrate acá
               </Link>
             </p>

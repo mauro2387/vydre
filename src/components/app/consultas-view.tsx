@@ -6,6 +6,7 @@ import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { Search, Send, MessageCircle, Loader2, Mail, ChevronDown, ChevronUp } from 'lucide-react'
 import { toast } from 'sonner'
+import ReactMarkdown from 'react-markdown'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -210,9 +211,9 @@ export function ConsultasView({
                         <Separator />
                         <div>
                           <p className="text-sm font-medium text-muted-foreground mb-1">Resumen para el paciente</p>
-                          <p className="text-sm whitespace-pre-wrap bg-background rounded-md p-3 border">
-                            {entry.ai_summary}
-                          </p>
+                          <div className="prose prose-sm max-w-none rounded-md p-3 border bg-background">
+                            <ReactMarkdown>{entry.ai_summary}</ReactMarkdown>
+                          </div>
                         </div>
                       </>
                     )}

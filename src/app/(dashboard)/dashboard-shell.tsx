@@ -63,9 +63,16 @@ export function DashboardShell({
     <div className="flex min-h-screen">
       {/* Mobile header */}
       <header className="fixed inset-x-0 top-0 z-40 flex h-14 items-center border-b bg-background px-4 md:hidden">
-        <div className="flex-1" />
-        <span className="text-lg font-bold">Vydre</span>
-        <div className="flex flex-1 justify-end">
+        <div className="flex flex-1 items-center gap-2">
+          <div
+            className="flex h-6 w-6 items-center justify-center text-white"
+            style={{ background: 'var(--brand)', borderRadius: '6px', fontSize: '12px', fontWeight: 700 }}
+          >
+            V
+          </div>
+          <span className="text-base font-semibold" style={{ color: 'var(--text-primary)' }}>Vydre</span>
+        </div>
+        <div className="flex justify-end">
           <button
             onClick={() => setSidebarOpen(true)}
             className="inline-flex h-9 w-9 items-center justify-center rounded-md hover:bg-accent"
@@ -85,9 +92,10 @@ export function DashboardShell({
 
       {/* Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-[220px] transform border-r bg-muted/40 transition-transform duration-200 md:relative md:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 w-[240px] transform transition-transform duration-200 md:relative md:translate-x-0 ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
+        style={{ background: 'var(--sidebar-bg)' }}
       >
         <SidebarNav
           professionalName={professionalName}
@@ -98,8 +106,13 @@ export function DashboardShell({
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 p-4 pt-18 md:p-6 lg:p-8">
-        {children}
+      <main
+        className="flex-1 pt-18 md:pt-0"
+        style={{ background: 'var(--page-bg)', padding: 'var(--page-padding)' }}
+      >
+        <div className="mx-auto max-w-6xl px-4 py-6 md:px-0 md:py-0">
+          {children}
+        </div>
       </main>
 
       <Toaster richColors position="bottom-right" />

@@ -243,11 +243,19 @@ export function StatsClient({
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={trend}>
-                <CartesianGrid strokeDasharray="3 3" />
+                <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
                 <XAxis dataKey="month" fontSize={12} />
                 <YAxis allowDecimals={false} fontSize={12} />
-                <Tooltip />
-                <Bar dataKey="appointments" name="Turnos" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                <Tooltip
+                  contentStyle={{
+                    background: '#fff',
+                    border: '1px solid #E2E8F0',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                    fontSize: '13px',
+                  }}
+                />
+                <Bar dataKey="appointments" name="Turnos" fill="#0EA5E9" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="noShows" name="Ausencias" fill="hsl(var(--destructive))" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>

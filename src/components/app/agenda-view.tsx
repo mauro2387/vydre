@@ -174,13 +174,23 @@ export function AgendaView({
           </Button>
         </div>
       ) : (
-        <div className="flex flex-wrap items-center justify-between gap-4">
+        <div
+          className="flex flex-wrap items-center justify-between gap-4"
+          style={{
+            background: 'var(--card-bg)',
+            border: '1px solid var(--card-border)',
+            borderRadius: 'var(--card-radius)',
+            padding: '12px 20px',
+            boxShadow: 'var(--card-shadow)',
+          }}
+        >
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
               size="icon"
               onClick={() => navigateWeek('prev')}
               disabled={isPending}
+              className="h-8 w-8"
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
@@ -189,14 +199,20 @@ export function AgendaView({
               size="icon"
               onClick={() => navigateWeek('next')}
               disabled={isPending}
+              className="h-8 w-8"
             >
               <ChevronRight className="h-4 w-4" />
             </Button>
-            <span className="text-lg font-semibold capitalize">
+            <span className="capitalize" style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)' }}>
               {formatWeekRange()}
             </span>
           </div>
-          <Button variant="outline" onClick={goToToday} disabled={isPending}>
+          <Button
+            variant="outline"
+            onClick={goToToday}
+            disabled={isPending}
+            className="h-8 px-4 text-sm"
+          >
             Hoy
           </Button>
         </div>
@@ -256,17 +272,37 @@ export function AgendaView({
 
             return (
               <div key={dayIndex}>
-                <div className="mb-3 flex items-center gap-2">
-                  <h3 className="text-base font-bold">{capitalizedDay}</h3>
+                <div
+                  className="mb-3 flex items-center gap-2"
+                  style={{
+                    paddingBottom: '8px',
+                    borderBottom: '1px solid var(--card-border)',
+                  }}
+                >
+                  <h3 style={{ fontSize: '14px', fontWeight: 600, color: isToday ? 'var(--brand)' : 'var(--text-primary)' }}>
+                    {capitalizedDay}
+                  </h3>
                   {isToday && (
-                    <span className="rounded-full bg-primary px-2 py-0.5 text-xs font-medium text-primary-foreground">
+                    <span
+                      style={{
+                        background: 'var(--brand)',
+                        color: 'white',
+                        borderRadius: '20px',
+                        padding: '2px 10px',
+                        fontSize: '11px',
+                        fontWeight: 500,
+                      }}
+                    >
                       Hoy
                     </span>
                   )}
+                  <span style={{ fontSize: '12px', color: 'var(--text-tertiary)', marginLeft: 'auto' }}>
+                    {dayAppointments.length} turno{dayAppointments.length !== 1 ? 's' : ''}
+                  </span>
                 </div>
 
                 {dayAppointments.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Sin turnos</p>
+                  <p style={{ fontSize: '13px', color: 'var(--text-tertiary)', padding: '12px 0' }}>Sin turnos</p>
                 ) : (
                   <div className="space-y-2">
                     {dayAppointments.map((apt) => (
@@ -281,8 +317,6 @@ export function AgendaView({
                     ))}
                   </div>
                 )}
-
-                {dayIndex < 6 && <Separator className="mt-4" />}
               </div>
             )
           })}
@@ -418,30 +452,60 @@ function TurnoCard({
     }
   }
 
+  const statusLineColor =
+    confirmation === 'confirmed' ? '#10B981'
+    : status === 'completed' ? '#94A3B8'
+    : status === 'no_show' || status === 'cancelled' ? '#EF4444'
+    : '#F59E0B'
+
   return (
-    <Card className="transition-colors hover:bg-muted/50">
-      <CardContent className="flex items-center gap-4 py-3">
-        <div className="w-24 shrink-0 text-center">
-          <p className="text-sm font-bold">{startTime} – {endTime}</p>
-        </div>
-        <div className="flex-1">
-          <p className="font-medium">{patientName}</p>
-          {isRecurring && recurrenceLabel && (
-            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-              <Repeat className="h-3 w-3" />
-              {recurrenceLabel}
-            </span>
-          )}
-        </div>
-        <AppointmentStatusBadge status={status} confirmation={confirmation} />
-        {appointment.appointment_confirmations?.reminder_sent_at && (
-          <span
-            className="inline-flex items-center gap-1 text-xs text-muted-foreground"
-            title={`Recordatorio enviado ${format(new Date(appointment.appointment_confirmations.reminder_sent_at), "d 'de' MMMM, HH:mm", { locale: es })}`}
-          >
-            <BellRing className="h-3.5 w-3.5" />
+    <div
+      className="group flex items-center gap-4 transition-all"
+      style={{
+        background: 'var(--card-bg)',
+        border: '1px solid var(--card-border)',
+        borderRadius: 'var(--card-radius)',
+        padding: '12px 16px',
+        borderLeft: `3px solid ${statusLineColor}`,
+        boxShadow: 'var(--card-shadow)',
+      }}
+      onMouseEnter={(e) => { e.currentTarget.style.boxShadow = 'var(--card-shadow-hover)' }}
+      onMouseLeave={(e) => { e.currentTarget.style.boxShadow = 'var(--card-shadow)' }}
+    >
+      <span
+        style={{
+          background: '#F1F5F9',
+          borderRadius: '6px',
+          padding: '4px 10px',
+          fontSize: '13px',
+          fontWeight: 600,
+          color: 'var(--text-primary)',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        {startTime}
+      </span>
+      <div className="flex-1 min-w-0">
+        <p style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-primary)' }} className="truncate">
+          {patientName}
+        </p>
+        {isRecurring && recurrenceLabel && (
+          <span className="inline-flex items-center gap-1" style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>
+            <Repeat className="h-3 w-3" />
+            {recurrenceLabel}
           </span>
         )}
+      </div>
+      <AppointmentStatusBadge status={status} confirmation={confirmation} />
+      {appointment.appointment_confirmations?.reminder_sent_at && (
+        <span
+          className="inline-flex items-center gap-1"
+          style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}
+          title={`Recordatorio enviado ${format(new Date(appointment.appointment_confirmations.reminder_sent_at), "d 'de' MMMM, HH:mm", { locale: es })}`}
+        >
+          <BellRing className="h-3.5 w-3.5" />
+        </span>
+      )}
         {hasActions && (
           <DropdownMenu>
             <DropdownMenuTrigger className="inline-flex h-8 w-8 items-center justify-center rounded-md hover:bg-accent hover:text-accent-foreground">
@@ -499,8 +563,7 @@ function TurnoCard({
             </DropdownMenuContent>
           </DropdownMenu>
         )}
-      </CardContent>
-    </Card>
+    </div>
   )
 }
 
