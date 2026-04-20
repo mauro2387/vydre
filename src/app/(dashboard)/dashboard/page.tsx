@@ -142,31 +142,27 @@ export default async function DashboardPage() {
         <StatCard
           label="Turnos hoy"
           value={totalToday}
-          icon={CalendarDays}
+          icon={<CalendarDays size={18} style={{ color: '#3B82F6' }} />}
           iconBg="#EFF6FF"
-          iconColor="#3B82F6"
         />
         <StatCard
           label="Confirmados"
           value={confirmedCount}
-          icon={CheckCircle}
+          icon={<CheckCircle size={18} style={{ color: '#10B981' }} />}
           iconBg="#ECFDF5"
-          iconColor="#10B981"
         />
         <StatCard
           label="Sin confirmar"
           value={pendingCount}
-          icon={Clock}
+          icon={<Clock size={18} style={{ color: '#F59E0B' }} />}
           iconBg="#FFFBEB"
-          iconColor="#F59E0B"
         />
         <StatCard
           label="Ingresos del mes"
           value={fmtCurrency(paymentsSummary.total)}
           subtitle={`${paymentsSummary.count} cobros`}
-          icon={DollarSign}
+          icon={<DollarSign size={18} style={{ color: '#22C55E' }} />}
           iconBg="#F0FDF4"
-          iconColor="#22C55E"
         />
       </div>
 

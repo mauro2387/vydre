@@ -1,22 +1,19 @@
 'use client'
 
 import type { ReactNode } from 'react'
-import type { LucideIcon } from 'lucide-react'
 
 export function StatCard({
   label,
   value,
   subtitle,
-  icon: Icon,
+  icon,
   iconBg,
-  iconColor,
 }: {
   label: string
   value: string | number
   subtitle?: string
-  icon: LucideIcon
+  icon: ReactNode
   iconBg: string
-  iconColor: string
 }) {
   return (
     <div
@@ -58,7 +55,7 @@ export function StatCard({
             background: iconBg,
           }}
         >
-          <Icon size={18} style={{ color: iconColor }} />
+          {icon}
         </div>
       </div>
       <p
