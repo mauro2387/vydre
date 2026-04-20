@@ -329,6 +329,7 @@ export function AgendaView({
           appointmentId={paymentApt.id}
           patientId={paymentApt.patients?.id ?? paymentApt.patient_id}
           patientName={paymentApt.patients?.name ?? 'Paciente sin asignar'}
+          patientEmail={paymentApt.patients?.email ?? null}
           suggestedAmount={(() => {
             const fees = (professional.default_fees as Record<string, number> | null) ?? {}
             const durMin = Math.round((new Date(paymentApt.end_at).getTime() - new Date(paymentApt.start_at).getTime()) / 60000)

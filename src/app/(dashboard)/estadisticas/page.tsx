@@ -1,5 +1,6 @@
 import { format, subMonths } from 'date-fns'
 import { getMonthlyStats, getMonthlyTrend, getHeatmapData, getPendingPayments } from '@/lib/actions/stats'
+import { getReceiptStats } from '@/lib/actions/receipts'
 import { StatsClient } from './stats-client'
 
 export default async function EstadisticasPage({
@@ -11,12 +12,13 @@ export default async function EstadisticasPage({
   const currentMonth = params.mes ?? format(new Date(), 'yyyy-MM')
   const previousMonth = format(subMonths(new Date(), 1), 'yyyy-MM')
 
-  const [stats, prevStats, trend, heatmap, pendingPayments] = await Promise.all([
+  const [stats, prevStats, trend, heatmap, pendingPayments, receiptStats] = await Promise.all([
     getMonthlyStats(currentMonth),
     getMonthlyStats(previousMonth),
     getMonthlyTrend(6),
     getHeatmapData(),
     getPendingPayments(),
+    getReceiptStats(),
   ])
 
   return (
@@ -27,6 +29,7 @@ export default async function EstadisticasPage({
       heatmap={heatmap}
       pendingPayments={pendingPayments}
       currentMonth={currentMonth}
+      receiptStats={receiptStats}
     />
   )
 }

@@ -20,6 +20,7 @@ import {
   Clock,
   TrendingUp,
   CheckCircle,
+  Receipt,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -51,6 +52,13 @@ type PendingPayment = {
   patients: { name: string } | null
 }
 
+type ReceiptStats = {
+  total: number
+  totalAmount: number
+  sentCount: number
+  currency: string
+}
+
 const DAY_NAMES = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
 
 function fmtCurrency(amount: number) {
@@ -68,6 +76,7 @@ export function StatsClient({
   heatmap,
   pendingPayments,
   currentMonth,
+  receiptStats,
 }: {
   stats: MonthlyStats
   prevStats: MonthlyStats
@@ -75,6 +84,7 @@ export function StatsClient({
   heatmap: HeatmapItem[]
   pendingPayments: PendingPayment[]
   currentMonth: string
+  receiptStats: ReceiptStats
 }) {
   const router = useRouter()
   const s = stats ?? {
@@ -303,6 +313,39 @@ export function StatsClient({
               {pendingPayments.map((p) => (
                 <PendingRow key={p.id} payment={p} />
               ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Receipt stats this month */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Receipt className="h-4 w-4" />
+            Recibos emitidos este mes
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {receiptStats.total === 0 ? (
+            <p className="text-muted-foreground text-sm">No se emitieron recibos este mes</p>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div className="space-y-1">
+                <p className="text-2xl font-bold">{receiptStats.total}</p>
+                <p className="text-xs text-muted-foreground">Recibos generados</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-2xl font-bold">{fmtCurrency(receiptStats.totalAmount)}</p>
+                <p className="text-xs text-muted-foreground">Monto total facturado</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-2xl font-bold">
+                  {receiptStats.sentCount}
+                  <span className="text-sm font-normal text-muted-foreground">/{receiptStats.total}</span>
+                </p>
+                <p className="text-xs text-muted-foreground">Enviados por email</p>
+              </div>
             </div>
           )}
         </CardContent>

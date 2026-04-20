@@ -18,6 +18,10 @@ export type Payment = {
   notes: string | null
   paid_at: string
   created_at: string
+  receipt_number: string | null
+  receipt_storage_path: string | null
+  receipt_sent_at: string | null
+  receipt_generated_at: string | null
 }
 
 export type PaymentWithPatient = Payment & {
@@ -44,7 +48,7 @@ export async function recordPayment(input: RecordPaymentInput) {
   const professional = await getProfessional()
   if (!professional) throw new Error('Profesional no encontrado')
 
-  const { error } = await supabase.from('payments').insert({
+  const { data: inserted, error } = await supabase.from('payments').insert({
     professional_id: professional.id,
     appointment_id: data.appointment_id ?? null,
     patient_id: data.patient_id ?? null,
@@ -54,7 +58,7 @@ export async function recordPayment(input: RecordPaymentInput) {
     status: data.status,
     notes: data.notes ?? null,
     paid_at: data.paid_at ?? new Date().toISOString(),
-  })
+  }).select('id').single()
 
   if (error) throw new Error(`Error al registrar cobro: ${error.message}`)
 
@@ -62,6 +66,8 @@ export async function recordPayment(input: RecordPaymentInput) {
   revalidatePath('/consultas')
   revalidatePath('/configuracion')
   if (data.patient_id) revalidatePath('/pacientes')
+
+  return { id: inserted.id }
 }
 
 export async function deletePayment(id: string) {

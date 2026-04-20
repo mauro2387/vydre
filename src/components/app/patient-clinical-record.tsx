@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, type KeyboardEvent, type ChangeEvent } from 'react'
+import { useState, useCallback, useEffect, type KeyboardEvent, type ChangeEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -16,6 +16,10 @@ import {
   Loader2,
   Sparkles,
   Paperclip,
+  Receipt,
+  Download,
+  Send,
+  CheckCircle,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -45,6 +49,7 @@ import {
 import { parseActionError } from '@/lib/utils/error-messages'
 import { FileUploadZone } from '@/components/app/file-upload-zone'
 import { PatientFilesGallery } from '@/components/app/patient-files-gallery'
+import { getReceipts, sendReceiptByEmail } from '@/lib/actions/receipts'
 import type {
   Patient,
   ClinicalEntry,
@@ -52,7 +57,7 @@ import type {
   MedicationEntry,
 } from '@/lib/types/database.types'
 
-type Tab = 'ficha' | 'medicacion' | 'evolucion' | 'archivos'
+type Tab = 'ficha' | 'medicacion' | 'evolucion' | 'recibos' | 'archivos'
 
 const BLOOD_TYPES = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']
 
@@ -72,6 +77,7 @@ export function PatientClinicalRecord({
     { key: 'ficha', label: 'Ficha', icon: <FileText className="h-4 w-4" /> },
     { key: 'medicacion', label: 'Medicación', icon: <Pill className="h-4 w-4" /> },
     { key: 'evolucion', label: 'Evolución', icon: <AlertCircle className="h-4 w-4" /> },
+    { key: 'recibos', label: 'Recibos', icon: <Receipt className="h-4 w-4" /> },
     { key: 'archivos', label: 'Archivos', icon: <FolderOpen className="h-4 w-4" /> },
   ]
 
@@ -101,6 +107,7 @@ export function PatientClinicalRecord({
         <TabMedicacion patient={patient} medications={medications} />
       )}
       {tab === 'evolucion' && <TabEvolucion entries={entries} />}
+      {tab === 'recibos' && <TabRecibos patientId={patient.id} patientEmail={patient.email} />}
       {tab === 'archivos' && <TabArchivos patientId={patient.id} professionalId={patient.professional_id} />}
     </div>
   )
@@ -734,6 +741,124 @@ function TabArchivos({ patientId, professionalId }: { patientId: string; profess
         onDelete={handleDelete}
         onRefresh={loadFiles}
       />
+    </div>
+  )
+}
+
+// ─── Tab: Recibos ──────────────────────────────────────────────
+const METHOD_BADGE_LABELS: Record<string, string> = {
+  cash: 'Efectivo',
+  transfer: 'Transferencia',
+  card: 'Tarjeta',
+  mercadopago: 'MercadoPago',
+  other: 'Otro',
+}
+
+function TabRecibos({ patientId, patientEmail }: { patientId: string; patientEmail: string | null }) {
+  const [receipts, setReceipts] = useState<Awaited<ReturnType<typeof getReceipts>>>([])
+  const [loading, setLoading] = useState(true)
+  const [sendingId, setSendingId] = useState<string | null>(null)
+
+  const loadReceipts = useCallback(async () => {
+    setLoading(true)
+    try {
+      const data = await getReceipts({ patientId })
+      setReceipts(data)
+    } finally {
+      setLoading(false)
+    }
+  }, [patientId])
+
+  // Load on mount
+  useEffect(() => { loadReceipts() }, [loadReceipts])
+
+  async function handleSendEmail(paymentId: string) {
+    setSendingId(paymentId)
+    try {
+      await sendReceiptByEmail(paymentId)
+      toast.success('Recibo enviado por email')
+      loadReceipts()
+    } catch (err) {
+      toast.error(parseActionError(err))
+    } finally {
+      setSendingId(null)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex justify-center py-12">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
+
+  if (receipts.length === 0) {
+    return (
+      <div className="flex flex-col items-center gap-2 py-12 text-center text-muted-foreground">
+        <Receipt className="h-10 w-10" />
+        <p className="text-sm font-medium">Sin recibos</p>
+        <p className="text-xs">Los recibos se generan al registrar un cobro desde la agenda.</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-3">
+      {receipts.map((r) => (
+        <Card key={r.id}>
+          <CardContent className="flex items-center justify-between p-4">
+            <div className="min-w-0 flex-1 space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium">{r.receipt_number}</span>
+                <Badge variant="outline" className="text-xs">
+                  {METHOD_BADGE_LABELS[r.method] ?? r.method}
+                </Badge>
+                {r.receipt_sent_at ? (
+                  <Badge variant="secondary" className="gap-1 text-xs text-green-600">
+                    <CheckCircle className="h-3 w-3" /> Enviado
+                  </Badge>
+                ) : (
+                  <Badge variant="secondary" className="text-xs text-muted-foreground">
+                    No enviado
+                  </Badge>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                ${Number(r.amount).toLocaleString('es-AR', { minimumFractionDigits: 2 })} {r.currency}
+                {r.receipt_generated_at && (
+                  <> · {format(new Date(r.receipt_generated_at), "d 'de' MMMM yyyy", { locale: es })}</>
+                )}
+              </p>
+            </div>
+            <div className="flex gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => window.open(`/api/receipts/${r.id}`, '_blank')}
+                title="Descargar PDF"
+              >
+                <Download className="h-4 w-4" />
+              </Button>
+              {patientEmail && !r.receipt_sent_at && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => handleSendEmail(r.id)}
+                  disabled={sendingId === r.id}
+                  title={`Enviar a ${patientEmail}`}
+                >
+                  {sendingId === r.id ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="h-4 w-4" />
+                  )}
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      ))}
     </div>
   )
 }

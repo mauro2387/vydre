@@ -490,6 +490,10 @@ export type Database = {
           notes: string | null
           paid_at: string
           created_at: string
+          receipt_number: string | null
+          receipt_storage_path: string | null
+          receipt_sent_at: string | null
+          receipt_generated_at: string | null
         }
         Insert: {
           id?: string
@@ -503,6 +507,10 @@ export type Database = {
           notes?: string | null
           paid_at?: string
           created_at?: string
+          receipt_number?: string | null
+          receipt_storage_path?: string | null
+          receipt_sent_at?: string | null
+          receipt_generated_at?: string | null
         }
         Update: {
           id?: string
@@ -516,6 +524,10 @@ export type Database = {
           notes?: string | null
           paid_at?: string
           created_at?: string
+          receipt_number?: string | null
+          receipt_storage_path?: string | null
+          receipt_sent_at?: string | null
+          receipt_generated_at?: string | null
         }
         Relationships: []
       }
@@ -702,6 +714,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_receipt_number: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       search_patients: {
         Args: {
           prof_id: string
